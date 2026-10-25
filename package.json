@@ -1,0 +1,20 @@
+{
+  "name": "spec-mirror",
+  "version": "0.1.0",
+  "description": "명세가 원본이 되는 스펙 주도 개발 Claude Code 플러그인 — 기능(requirements → design → tasks)과 버그(bugfix → design → tasks)",
+  "private": true,
+  "type": "module",
+  "license": "SEE LICENSE IN LICENSE",
+  "author": "b2aconnn (https://github.com/b2aconnn)",
+  "bin": {
+    "spec-mirror": "scripts/spec-mirror.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test \"tests/**/*.test.mjs\"",
+    "check:examples": "node scripts/spec-mirror.mjs check",
+    "validate": "claude plugin validate ."
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "spec-mirror",
+  "owner": {
+    "name": "b2aconnn"
+  },
+  "metadata": {
+    "description": "spec-mirror 배포용 마켓플레이스"
+  },
+  "plugins": [
+    {
+      "name": "spec-mirror",
+      "source": "./",
+      "description": "명세가 원본이 되는 스펙 주도 개발. 기능(requirements → design → tasks)과 버그(bugfix → design → tasks)를 정해진 형식과 단계 승인으로 진행합니다.",
+      "version": "0.1.0"
+    }
+  ]
+}
