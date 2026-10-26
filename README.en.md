@@ -1,128 +1,101 @@
 # spec-mirror
 
-**The spec is the source of truth.** spec-mirror is a spec-driven development plugin for Claude Code. It keeps the business flow written in your documents and the flow of your code identical.
+**A Claude Code plugin that writes code from the spec, and keeps the spec true to the code.**
 
-It brings AWS Kiro's spec workflows (Feature Spec and Bugfix Spec) to Claude Code, and makes them stricter.
+Claude doesn't jump straight into code when you build a feature or fix a bug. It writes a spec first and implements only after you approve each stage. spec-mirror brings AWS Kiro's spec workflows (Feature Spec and Bugfix Spec) to Claude Code.
 
-- **Features** go through `requirements → design → tasks`. **Bugs** go through `bugfix → design → tasks`.
-- **A person approves** each stage before the next one starts, and a hook enforces that order.
-- Every document follows a **fixed format**, and a checker verifies it on every save.
-- Each requirement criterion maps to **exactly one code branch and one acceptance test**, and a trace table confirms the mapping.
+- **New feature**: requirements → design → tasks → implementation
+- **Bug fix**: bug analysis → root cause and fix scope → tasks → implementation
+- **Existing code**: turn current behavior into a spec as is
 
-> [한국어 README](README.md) is the primary documentation. Spec templates and format rules are currently Korean-only.
+> [한국어](README.md). Spec templates and format rules are written in Korean.
 
-## Why spec-mirror
+## Install
 
-| | Typical spec tools | spec-mirror |
-|---|---|---|
-| Requirements | Free text, EARS sentences | **Domain language only.** Technical terms, class names and URLs are errors |
-| Unit of a criterion | A feature | **One criterion = one code branch = one acceptance test** |
-| Order of criteria | Unspecified | **Processing flow = execution order** |
-| Bug fixes | Fix directly | Define **current, expected and unchanged behavior** first. Fix only after an exploration test **fails on the unfixed code** |
-| Format compliance | Relies on prompts | A checker and hooks run on every save, and errors block approval |
-| Stage transitions | Confirmed in chat | Approval is recorded with document hashes. Later-stage documents **cannot be written** before approval |
-| Link to code | Task checkboxes | Test names `R{N}-{M}` and branch comments `// R{N}-{M}` produce a **trace table** |
-
-## Quick start
-
-You need Claude Code and Node.js 18 or later. There are no packages to install.
+Requires Claude Code and Node.js 18+.
 
 ```text
 /plugin marketplace add b2aconnn/spec-mirror
 /plugin install spec-mirror@spec-mirror
+```
 
+Restart Claude Code after installing.
+
+## Get started
+
+Run this once in your project:
+
+```text
 /spec-mirror:init
+```
+
+It creates `.spec-mirror/config.json` and the spec folder `docs/spec/`.
+
+## Usage
+
+### Build a feature
+
+```text
 /spec-mirror:spec order Members pick products and pay for an order
-/spec-mirror:bugfix confirm-recheck-mismatch Recheck after an unknown result returns 400 instead of 502 on mismatch
 ```
 
-Claude writes one stage and stops. Reply "승인" (approve) to move on to the next stage. After tasks are approved, run `/spec-mirror:implement <name>` and finish with `/spec-mirror:sync <name>`.
+1. Claude writes the **requirements** (`requirements.md`) and stops.
+2. Review them. Ask for changes, or reply **"승인"** (approve).
+3. After approval it writes the **design** (`design.md`). After the next approval it writes the **tasks** (`tasks.md`).
+4. Once the tasks are approved, implement:
 
-For local development, run `claude --plugin-dir /path/to/spec-mirror`.
-
-## Feature specs
-
-```
-docs/spec/<feature>/
-├── requirements.md      Introduction · Glossary · Requirements · Open Questions
-├── design.md            Overview + table of contents
-├── design/01-architecture.md … 08-deployment-configuration.md
-├── tasks.md             Overview · Tasks · Notes · Task Dependency Graph
-└── .spec-mirror.json    approval record (generated)
+```text
+/spec-mirror:implement order        next task (test first, then code)
+/spec-mirror:sync order             final check of spec, tests and code
 ```
 
-## Bugfix specs
+### Fix a bug
 
-```
-docs/spec/<bug>/
-├── bugfix.md            Current Behavior (Defect) · Expected Behavior (Correct) · Unchanged Behavior (Regression Prevention)
-├── design.md            Bug Condition (isBugCondition) · Hypothesized Root Cause · Properties · Fix Implementation · Testing Strategy
-└── tasks.md             fixed order, described below
+```text
+/spec-mirror:bugfix pay-mismatch Amount mismatch returns 400 but should return 502
 ```
 
-The tasks always run in this order:
+Include how to reproduce the bug, what happens now, what should happen, and what must not change.
 
-1. **Exploration test** for the bug condition. It must **fail** on the unfixed code. If it passes, Claude stops and re-analyzes the root cause.
-2. **Preservation tests.** They must **pass** on the unfixed code.
-3. **Fix**, then re-run both test sets.
-4. **Spec update.** The feature spec is updated to match the fixed behavior.
-5. Checkpoint.
+1. **Bug analysis** (`bugfix.md`): current behavior, expected behavior, and **behavior to keep**.
+2. **Design** (`design.md`): the root cause, found by reading the code, and the fix scope.
+3. **Tasks** (`tasks.md`), always in this order:
+   1. Write a test that reproduces the bug. It must **fail before the fix**.
+   2. Write tests for the behavior to keep. They must **pass before the fix**.
+   3. After the fix, confirm that both sets pass.
+   4. Update the feature spec to match the fixed behavior.
 
-Each expected or unchanged behavior links to the feature criterion that defines it, for example `명세: order 6.21`. Its tests therefore use that criterion's `R{N}-{M}` name.
+### Turn existing code into specs
 
-## Adopting existing code
+```text
+/spec-mirror:adopt                  whole project: start with the spec map
+/spec-mirror:adopt payment          one feature
+```
 
-`/spec-mirror:adopt` turns existing code into feature specs **without changing behavior**.
+Claude writes the spec from the code **without changing behavior**. For a whole project it first lists features in `docs/spec/README.md`, then adopts one feature at a time. Suspected bugs are reported, not fixed.
 
-- **Whole project:** it first writes a spec map (`docs/spec/README.md`). The map lists features, their scope, entry points, related features and order. Once you approve the map, it adopts **one feature at a time**.
-- **requirements:** it builds a branch inventory from the code. Every branch becomes one criterion, and the branch-to-criterion table must have no gaps.
-- **design:** it describes the current structure.
-- **tasks:** adoption work only. Existing tests are renamed to `R{N}-{M}`, missing acceptance tests are added (they must pass on the current code), and branches get `R{N}-{M}` comments.
-- Suspected bugs are reported as bugfix candidates and are not fixed during adoption.
+## How it works
 
-## Review
-
-Every stage is reviewed by the independent `spec-reviewer` agent before it is shown to you. Findings are verified before they are applied. A second review runs only when the structure changed, for example when criteria were moved, split, merged or added. The approval request includes a findings table that shows what was applied and why.
+- **You approve every stage.** Claude never moves on by itself, and later-stage documents are locked until the earlier stage is approved.
+- **The format is checked automatically** on every save, and Claude fixes errors right away.
+- **A separate reviewer agent** reads each stage independently. Its findings, and what was done with them, are shown when Claude asks for approval.
+- **Spec and code are linked by number.** One criterion maps to one test (`R1-2 …`) and one code branch (`// R1-2`). `/spec-mirror:sync` finds the gaps.
 
 ## Commands
 
-| Command | Description |
+| Command | What it does |
 |---|---|
-| `/spec-mirror:init` | Create config and spec folder, and add workflow notes to CLAUDE.md |
-| `/spec-mirror:spec <name> [stage] [description]` | Feature spec. Continues from the current stage |
-| `/spec-mirror:bugfix <name> [stage] [description]` | Bugfix spec. Continues from the current stage |
-| `/spec-mirror:adopt [feature] [stage] [description]` | Turn existing code into a feature spec without changing behavior. Without a feature, it starts with the spec map |
-| `/spec-mirror:implement <name> [id\|next\|all]` | Implement tasks |
-| `/spec-mirror:sync <name> [--report-only]` | Report the trace table, then fix |
-| `/spec-mirror:check [name...]` | Format check only |
-| `/spec-mirror:status [name]` | Approval state, progress and next step |
-| `/spec-mirror:approve <name> [stage]` | Record approval (user only) |
+| `/spec-mirror:init` | Set up the project |
+| `/spec-mirror:spec <name> [description]` | Feature spec (call again for the next stage) |
+| `/spec-mirror:bugfix <name> [description]` | Bugfix spec (call again for the next stage) |
+| `/spec-mirror:adopt [feature]` | Turn existing code into a spec |
+| `/spec-mirror:implement <name> [next\|all\|id]` | Implement tasks |
+| `/spec-mirror:sync <name>` | Compare spec, tests and code, then fix |
+| `/spec-mirror:status` | Progress and next step per spec |
+| `/spec-mirror:check` | Format check only |
+| `/spec-mirror:approve <name>` | Approve the current stage (replying "승인" in chat also works) |
 
-The plugin also includes a `spec-reviewer` agent and three hooks:
-
-- **Stage lock** (before write): blocks writing a stage's document until the earlier stage is approved.
-- **Format check** (after write): checks every spec document when it is saved.
-- **Session status** (session start): reports specs in progress and what to do next.
-
-## Checker CLI
-
-```bash
-node scripts/spec-mirror.mjs check [name...] [--json] [--draft]   # exit 1 on errors
-node scripts/spec-mirror.mjs trace <name> [--json]                # exit 1 on mismatches
-node scripts/spec-mirror.mjs status|next|gate|approve|scaffold|list|init
-```
-
-Rule ID families: `REQ`, `DES`, `TSK` (feature), `BUG`, `BDS`, `BTK` (bugfix) and `MAP` (spec map). Each rule is described at the end of its rule file in [`rules/`](rules/).
-
-## Technology
-
-spec-mirror assumes no language or framework. The design and implement stages discover the stack in this order:
-
-1. The `techContext` documents in the config
-2. Build files
-3. Existing code and tests
-4. Technology skills available in the session
-5. The user
+Examples are in [`examples/`](examples/), and the full format rules are in [`rules/`](rules/).
 
 ## Development
 
@@ -131,8 +104,6 @@ npm test
 claude plugin validate .
 ```
 
-When the format changes, update `rules/`, `scripts/lib/`, `templates/` and `tests/` together, and keep both examples at zero errors and zero warnings. Versioning follows SemVer. A format change that turns existing documents into errors is a major version.
-
 ## License
 
-Copyright (c) 2026 b2aconnn. All rights reserved. Until public release, no part of this software may be copied, modified or distributed without the author's permission. An open source license is planned for the public release. See [LICENSE](LICENSE).
+Copyright (c) 2026 b2aconnn. All rights reserved. Until public release, no part of this software may be copied, modified or distributed without the author's permission. See [LICENSE](LICENSE).
