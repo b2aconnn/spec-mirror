@@ -16,7 +16,7 @@ allowed-tools: Bash(node *spec-mirror.mjs* next*), Bash(node *spec-mirror.mjs* g
 - 검사기: `node "<BASE>/../../scripts/spec-mirror.mjs"` (아래에서 `SM`)
 - 단계별 안내: `<BASE>/stages/requirements.md`, `<BASE>/stages/design.md`, `<BASE>/stages/tasks.md`
 - 규칙: `<BASE>/../../rules/` (`feature/`, `traceability.md`, `workflow.md`)
-- 정답 예제: `<BASE>/../../examples/order/`
+- 정답 예제: `<BASE>/../../examples/order/` (설계 규모 큼), `<BASE>/../../examples/wishlist/` (설계 규모 작음)
 
 ## 절차
 

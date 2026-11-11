@@ -87,21 +87,25 @@ Claude Code와 Node.js 18 이상이 필요합니다.
 <details>
 <summary><b>예시: design</b> — 요구사항을 코드 구조에 연결</summary>
 
-목차 `design.md`와 본문 8개 파일로 나뉩니다.
+목차 `design.md`와 본문 8개 파일로 나뉩니다. DDD로 설계하되, **기능 규모에 맞는 만큼만** 씁니다.
+
+- 01에서 requirements의 상태, 항상 지켜야 할 규칙, 외부 시스템, 다른 도메인, 동시성을 보고 **설계 규모**(작음 · 보통 · 큼)를 정합니다.
+- 작음은 서비스 하나에 흐름대로 두고 Aggregate를 정의하지 않습니다(컴포넌트 1~3개). 보통은 Aggregate가 불변식과 상태 전이를 지킵니다. 큼은 여러 Aggregate의 협력, 번역 계층, 이벤트까지 씁니다.
+- 컴포넌트는 분리 조건(트랜잭션 경계 · 외부 연동 · 공유 규칙 · 불변식 · 별도 진입점)이 있을 때만 나눕니다. 기존 프로젝트 구조가 먼저입니다.
 
 | 파일 | 내용 |
 |---|---|
 | `design.md` | 개요, 설계 목표, 문서 목차 |
-| `design/01-architecture.md` | 레이어 구조, 트랜잭션 경계 |
+| `design/01-architecture.md` | 설계 규모, 도메인 경계, 레이어 구조, 트랜잭션 경계 |
 | `design/02-components.md` | 컴포넌트와 인터페이스 (처리 순서가 요구사항과 같게) |
-| `design/03-data-models.md` | 엔티티, API, 테이블, 도메인 용어 ↔ 코드 표 |
+| `design/03-data-models.md` | Aggregate, Value Object, 엔티티, API, 테이블, 도메인 용어 ↔ 코드 표 |
 | `design/04-error-handling.md` | 에러 코드와 메시지, 로그 |
 | `design/05-testing.md` | 테스트 전략, 테스트 기준 데이터 |
 | `design/06-security-performance.md` | 보안, 성능 |
 | `design/07-correctness-properties.md` | 항상 성립해야 하는 성질 (Property) |
 | `design/08-deployment-configuration.md` | 배포, 설정 |
 
-전체 예시: [examples/order/design.md](examples/order/design.md)
+전체 예시: [examples/order/design.md](examples/order/design.md) (규모 큼, 컴포넌트 11개) · [examples/wishlist/design.md](examples/wishlist/design.md) (규모 작음, 서비스 하나 + Repository)
 
 </details>
 
@@ -114,8 +118,8 @@ Claude Code와 Node.js 18 이상이 필요합니다.
     - 정상 접수, 상품 개수 · 수량 · 중복 상품, 금액 한도
     - _Requirements: 1.1 ~ 1.17_
 
-  - [ ] 6.2 OrderRequestValidator 구현
-    - 상품 개수 → 수량 → 중복 상품 순서로 검증
+  - [ ] 6.2 OrderRequestItems, IdempotencyKey 구현 (Value Object)
+    - 만들 때 상품 개수 → 수량 → 중복 상품 순서로 확인
     - _Requirements: 1.2, 1.3, 1.4_
 
   - [ ]* 6.5 Property 테스트: 주문 상품 개수 / 수량 / 중복 상품
@@ -194,6 +198,7 @@ Claude Code와 Node.js 18 이상이 필요합니다.
 - **단계마다 사람이 승인합니다.** Claude가 스스로 다음 단계로 넘어가지 않습니다. 승인 전에는 다음 단계 문서를 쓸 수 없게 막혀 있습니다.
 - **형식을 자동으로 검사합니다.** 명세 문서를 저장할 때마다 검사하고, 틀린 곳은 Claude가 그 자리에서 고칩니다.
 - **리뷰어가 따로 봅니다.** 단계마다 별도의 리뷰 에이전트가 문서를 다시 읽고 빠진 것을 찾습니다. 승인을 요청할 때 무엇을 지적받았고 어떻게 처리했는지 함께 보여 줍니다.
+- **규모에 맞게 설계합니다.** design은 DDD를 따르되, 기능의 설계 규모(작음 · 보통 · 큼)에 맞는 도구만 씁니다. 작은 기능을 과하게 나누면 검사기가 경고하고 리뷰어가 지적합니다.
 - **명세와 코드를 번호로 잇습니다.** 요구사항의 기준 하나가 테스트 하나(`R1-2 …`)와 코드 분기 하나(`// R1-2`)로 이어집니다. `/spec-mirror:sync`가 빠진 것을 찾아 줍니다.
 - **승인 뒤에 문서를 고치면** 다시 승인받아야 다음 단계로 갈 수 있습니다.
 

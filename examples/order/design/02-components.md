@@ -8,10 +8,11 @@
 
 주문 접수의 핵심 흐름을 담당합니다. 상품 카탈로그 호출을 트랜잭션 밖에 두기 위해 이 클래스 자체에는 `@Transactional`을 붙이지 않습니다.
 
+**역할:** Application Service — 주문 접수의 진입점. 순서만 조율하고 규칙은 Value Object와 Aggregate에 둡니다
+
 ```kotlin
 @Service
 class OrderPlaceService(
-    private val validator: OrderRequestValidator,
     private val idempotencyService: OrderIdempotencyService,
     private val productCatalog: ProductCatalog,
     private val orderWriter: OrderWriter,
@@ -28,22 +29,22 @@ class OrderPlaceService(
      * 7. 주문 + 주문 항목 + 결제 저장 (한 트랜잭션)
      */
     fun place(command: PlaceOrderCommand): PlaceOrderResult {
-        validator.validateItems(command.items)
-        validator.validateIdempotencyKey(command.idempotencyKey)
+        val items = OrderRequestItems.of(command.items)
+        val key = IdempotencyKey.of(command.idempotencyKey)
 
-        val fingerprint = OrderFingerprint.of(command.items)
-        idempotencyService.findExisting(command.memberId, command.idempotencyKey, fingerprint)
+        val fingerprint = OrderFingerprint.of(items)
+        idempotencyService.findExisting(command.memberId, key.value, fingerprint)
             ?.let { return PlaceOrderResult.existing(it) }
 
-        val products = productCatalog.findProducts(command.items.map { it.productId })
-        val lines = OrderLines.of(command.items, products)
+        val products = productCatalog.findProducts(items.productIds)
+        val lines = OrderLines.of(items, products)
         val draft = OrderDraft.create(command, lines, fingerprint, clock.instant())
 
         return try {
             PlaceOrderResult.created(orderWriter.create(draft))
         } catch (e: DataIntegrityViolationException) {
             // 같은 키로 동시에 들어온 요청 중 늦은 쪽: 먼저 접수된 주문을 돌려준다
-            idempotencyService.resolveConcurrent(command.memberId, command.idempotencyKey, fingerprint)
+            idempotencyService.resolveConcurrent(command.memberId, key.value, fingerprint)
         }
     }
 }
@@ -55,38 +56,45 @@ class OrderPlaceService(
 - 주문 접수 중에는 PG를 호출하지 않음
 - 상품 카탈로그 장애는 `PRODUCT_CATALOG_UNAVAILABLE`로 변환
 
-### 2. Order Request Validator
+### 2. Order Request Items / Idempotency Key
 
-주문 요청의 항목과 중복 주문 방지 키를 검증합니다.
+주문 요청의 항목과 중복 주문 방지 키입니다. 만들어질 때 규칙을 확인하므로, 만들어진 값은 항상 올바릅니다.
+
+**역할:** Value Object — 분리 조건 4. 요청 값의 규칙(1.2 → 1.3 → 1.4, 2.1)을 값 자체가 지킵니다. 별도 Validator를 두지 않습니다
 
 ```kotlin
-@Component
-class OrderRequestValidator {
+class OrderRequestItems private constructor(val values: List<OrderItemCommand>) {
+
+    val productIds: List<Long> get() = values.map { it.productId }
 
     companion object {
-        private const val MIN_ITEMS = 1
         private const val MAX_ITEMS = 20
-        private const val MIN_QUANTITY = 1
-        private const val MAX_QUANTITY = 99
-        private val IDEMPOTENCY_KEY_PATTERN = Regex("^[A-Za-z0-9_-]{1,64}$")
-    }
+        private val QUANTITY_RANGE = 1..99
 
-    fun validateItems(items: List<OrderItemCommand>?) {
-        if (items.isNullOrEmpty() || items.size > MAX_ITEMS) {
-            throw OrderException(OrderErrorCode.INVALID_ORDER_ITEM_COUNT)
-        }
-        if (items.any { it.quantity !in MIN_QUANTITY..MAX_QUANTITY }) {
-            throw OrderException(OrderErrorCode.INVALID_ORDER_QUANTITY)
-        }
-        if (items.map { it.productId }.toSet().size != items.size) {
-            throw OrderException(OrderErrorCode.DUPLICATED_ORDER_ITEM)
+        /** 개수 → 수량 → 중복 상품 순서로 확인하고, 처음 어긋난 하나만 알립니다. */
+        fun of(items: List<OrderItemCommand>?): OrderRequestItems {
+            if (items.isNullOrEmpty() || items.size > MAX_ITEMS) {
+                throw OrderException(OrderErrorCode.INVALID_ORDER_ITEM_COUNT)
+            }
+            if (items.any { it.quantity !in QUANTITY_RANGE }) {
+                throw OrderException(OrderErrorCode.INVALID_ORDER_QUANTITY)
+            }
+            if (items.map { it.productId }.toSet().size != items.size) {
+                throw OrderException(OrderErrorCode.DUPLICATED_ORDER_ITEM)
+            }
+            return OrderRequestItems(items)
         }
     }
+}
 
-    fun validateIdempotencyKey(key: String?) {
-        if (key == null || !IDEMPOTENCY_KEY_PATTERN.matches(key)) {
-            throw OrderException(OrderErrorCode.INVALID_IDEMPOTENCY_KEY)
-        }
+@JvmInline
+value class IdempotencyKey private constructor(val value: String) {
+    companion object {
+        private val PATTERN = Regex("^[A-Za-z0-9_-]{1,64}$")
+
+        fun of(key: String?): IdempotencyKey =
+            if (key != null && PATTERN.matches(key)) IdempotencyKey(key)
+            else throw OrderException(OrderErrorCode.INVALID_IDEMPOTENCY_KEY)
     }
 }
 ```
@@ -94,6 +102,8 @@ class OrderRequestValidator {
 ### 3. Order Idempotency Service
 
 중복 주문 방지 키로 같은 주문이 두 번 접수되지 않게 합니다.
+
+**역할:** Application Service (주문 접수의 일부) — 분리 조건 1. 상품 카탈로그 조회 전에 자기 트랜잭션에서 키를 확인 · 정리합니다
 
 ```kotlin
 @Service
@@ -145,8 +155,8 @@ class OrderIdempotencyService(
 ```kotlin
 object OrderFingerprint {
     /** 상품 ID 오름차순으로 정렬한 "상품ID:수량" 목록의 SHA-256 */
-    fun of(items: List<OrderItemCommand>): String =
-        items.sortedBy { it.productId }
+    fun of(items: OrderRequestItems): String =
+        items.values.sortedBy { it.productId }
             .joinToString(",") { "${it.productId}:${it.quantity}" }
             .sha256Hex()
 }
@@ -155,6 +165,8 @@ object OrderFingerprint {
 ### 4. Product Catalog Adapter
 
 상품 정보를 제공하는 외부 시스템과의 연동입니다. 주문 시스템은 조회만 합니다.
+
+**역할:** 포트 + 어댑터 — 분리 조건 2. 외부 응답(`CatalogProductResponse`)을 주문 도메인의 `CatalogProduct`로 번역합니다
 
 ```kotlin
 interface ProductCatalog {
@@ -199,6 +211,8 @@ class HttpProductCatalog(
 
 카탈로그 정보로 주문 항목과 주문 금액을 만들고, 주문번호·주문명·결제 기한을 정합니다.
 
+**역할:** Value Object(`OrderLines`) + Factory(`OrderDraft`) — 분리 조건 4. 금액 계산과 한도(1.9, 1.10), 주문 Aggregate의 처음 모습(1.11, 1.12)을 정합니다
+
 ```kotlin
 object OrderLines {
 
@@ -210,7 +224,8 @@ object OrderLines {
      * 3. 항목 금액 = 판매가 × 수량, 주문 금액 = 항목 금액의 합
      * 4. 주문 금액 10,000,000원 초과 → ORDER_AMOUNT_LIMIT_EXCEEDED
      */
-    fun of(items: List<OrderItemCommand>, products: Map<Long, CatalogProduct>): OrderLines {
+    fun of(request: OrderRequestItems, products: Map<Long, CatalogProduct>): OrderLines {
+        val items = request.values
         items.firstOrNull { it.productId !in products }?.let {
             throw OrderException(OrderErrorCode.PRODUCT_NOT_FOUND, it.productId.toString())
         }
@@ -259,6 +274,8 @@ object OrderDraft {
 
 주문, 주문 항목, 결제를 한 트랜잭션에서 저장합니다. 하나라도 실패하면 아무것도 저장되지 않습니다.
 
+**역할:** Application Service (주문 접수의 일부) — 분리 조건 1. 주문 접수에서 트랜잭션이 열리는 유일한 곳입니다(1.13)
+
 ```kotlin
 @Component
 class OrderWriter(
@@ -280,6 +297,8 @@ class OrderWriter(
 ### 7. Order Query Service
 
 주문 조회와 주문 내역을 담당합니다.
+
+**역할:** 조회 서비스 — 분리 조건 5. Aggregate를 거치지 않고 조회용 쿼리로 바로 읽습니다
 
 ```kotlin
 @Service
@@ -328,6 +347,8 @@ class OrderQueryService(
 
 결제 전 주문의 취소를 담당합니다. PG에는 어떤 요청도 보내지 않습니다 (승인 전이라 환불할 금액이 없음).
 
+**역할:** Application Service — 분리 조건 5. 주문 취소의 진입점입니다
+
 ```kotlin
 @Service
 class OrderCancelService(
@@ -368,6 +389,8 @@ class OrderCancelService(
 ```
 
 ### 9. Payment Confirm Service (변경)
+
+**역할:** Application Service (결제 도메인, 기존) — 바뀌는 부분만 보여 줍니다
 
 기존 결제 승인 흐름은 그대로 유지하고, 다음만 바뀝니다.
 
@@ -422,6 +445,8 @@ class PaymentStateService(...) {
 
 결제 상태가 바뀌는 트랜잭션 **안에서** 주문 상태를 함께 바꿉니다. 혼자서는 트랜잭션을 열지 않습니다.
 
+**역할:** Domain Service — 분리 조건 3. 승인 응답, 즉시 확인, 대사 세 흐름이 같은 반영 규칙(7.7)을 함께 씁니다
+
 ```kotlin
 @Component
 class OrderPaymentSynchronizer(
@@ -463,6 +488,8 @@ class OrderPaymentSynchronizer(
 ### 11. Order Expiration Scheduler
 
 결제 기한이 지난 주문을 1분마다 만료 처리합니다.
+
+**역할:** 진입점 (배치) — 분리 조건 5
 
 ```kotlin
 @Component

@@ -4,6 +4,25 @@
 
 ## Data Models
 
+### Aggregates
+
+| Aggregate | Root | 함께 묶이는 것 | 지키는 규칙 |
+|---|---|---|---|
+| 주문 | `Order` | `OrderItem`(주문 항목), 주문 금액, 결제 기한, 중복 주문 방지 키 | Requirements 1.15, 1.17, 2.6, 2.7, 3.5 |
+| 결제 | `Payment` (기존) | 결제 금액, 결제 기한, 실패 사유 | Requirements 6.24, 6.25, 6.26 |
+
+- 결제는 주문을 객체가 아니라 주문번호(`orderId`)로 참조합니다.
+- 두 Aggregate에 걸친 규칙(9.1 ~ 9.3)은 한 트랜잭션에서 결제 → 주문 순서로 바꿔 지킵니다. 한 트랜잭션에서 Aggregate 둘을 바꾸는 근거는 9.2(한쪽만 바뀐 상태가 보이지 않음)입니다. 자세한 경계는 [아키텍처](01-architecture.md)의 트랜잭션 경계에 있습니다.
+- 상태 전이는 기존 `Payment`와 같이 Repository 조건부 UPDATE로만 합니다. 동시에 겹치는 승인 · 취소 · 만료 중 하나만 반영되게 하기 위해서입니다(9.3).
+
+### Value Objects
+
+| Value Object | 지키는 규칙 | 위치 |
+|---|---|---|
+| `OrderRequestItems` | 상품 개수 · 수량 · 중복 상품 (1.2 → 1.3 → 1.4) | [컴포넌트 2](02-components.md) |
+| `IdempotencyKey` | 키 형식 (2.1) | [컴포넌트 2](02-components.md) |
+| `OrderLines` | 판매가로 금액 계산, 금액 한도 (1.9, 1.10) | [컴포넌트 5](02-components.md) |
+
 ### Domain Entities
 
 #### Order Entity

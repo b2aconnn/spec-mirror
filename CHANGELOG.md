@@ -2,6 +2,18 @@
 
 이 프로젝트의 변경 이력입니다. 버전은 [Semantic Versioning](https://semver.org/)을 따릅니다.
 
+## [Unreleased]
+
+### 추가
+- design을 DDD로 설계하되 기능 규모에 맞춰 적용: 01 `### 설계 규모`(작음 · 보통 · 큼, 신호 표) · `### 도메인 경계`, 02 `**역할:**`(DDD 구성 요소와 분리 조건), 03 `### Aggregates` · `### Value Objects`
+- 규칙 `rules/feature/design-format.md`의 "설계 규모와 DDD": 규모 판단, 규모별로 쓰는 것, 여러 Aggregate가 함께 바뀔 때, 컴포넌트 분리 조건과 만들지 않는 것
+- 검사 DES012(규모 값), DES013(규모 대비 컴포넌트 수, 경고), DES014(규모와 Aggregates 불일치, 경고), DES015(Aggregates의 기준 참조). DES006 필수 섹션에 설계 규모 · 도메인 경계 · Aggregates 추가
+- 리뷰어 design 항목: 규모 판단, 과하게 나눔, 덜 나눔, Aggregate 경계. adopt · bugfix에서 규모를 다루는 방법
+- 설계 규모 작음 예제 `examples/wishlist/` (상품 찜: 서비스 하나 + Repository, Aggregate 없음, 보통 칸 신호 둘은 국소 보강). 명세 지도 예제에 추가
+
+### 변경
+- 예제 `examples/order` design을 규모 "큼"으로 정리: `OrderRequestValidator`를 Value Object `OrderRequestItems` · `IdempotencyKey`로 바꿈
+
 ## [0.1.0] - 2026-10-25
 
 첫 버전입니다. 공개 배포 전 개발 버전입니다.
