@@ -10,6 +10,9 @@ export const REQUIREMENT_SECTIONS = ['Introduction', 'Glossary', 'Requirements',
 export const CRITERIA_GROUPS = ['처리 흐름', '항상 지켜야 할 규칙']
 export const FLOW = CRITERIA_GROUPS[0]
 export const RULES = CRITERIA_GROUPS[1]
+/** 에러로 끝나는 기준의 표시: "⛔ `예외` **…**" */
+export const EXCEPTION_MARK = '⛔ `예외`'
+const EXCEPTION_MARK_RE = /^⛔\s*`예외`\s*/
 
 /** Glossary 줄 묶음: "- **용어**: 정의" 와 그 아래 들여쓴 "  - 하위 항목" */
 export function parseGlossary(masked, section = 'Glossary') {
@@ -53,7 +56,8 @@ export function parseRequirements(file) {
     if (/^#### Acceptance Criteria\s*$/.test(line)) { req.hasAC = true; return }
     if ((m = line.match(/^##### (.+?)\s*$/))) { group = m[1]; req.groups.push({ name: group, line: ln }); crit = null; return }
     if ((m = line.match(/^(\d+)\.\s+(.*)$/))) {
-      crit = { number: Number(m[1]), text: m[2], line: ln, group, items: [] }
+      const exception = EXCEPTION_MARK_RE.test(m[2])
+      crit = { number: Number(m[1]), text: m[2].replace(EXCEPTION_MARK_RE, ''), exception, line: ln, group, items: [] }
       req.criteria.push(crit)
       return
     }
@@ -136,6 +140,10 @@ export function checkRequirements(file, root, config, report, { loadFeature } = 
       if (!c.rule) report.error('REQ007', f, c.line, `${id}: 첫 줄은 굵은 글씨의 비즈니스 규칙(**...**)으로 시작해야 합니다.`)
       // REQ008 · REQ010 · REQ011 · REQ012 세부 항목
       checkItems({ items: c.items, id, labels, file: f, report, ids, config })
+      // REQ019 에러로 끝나는 기준에는 ⛔ `예외` 표시
+      const hasError = c.items.some((it) => /^에러\s*[:：]/.test(it.text))
+      if (hasError && !c.exception) report.warn('REQ019', f, c.line, `${id}: 에러로 끝나는 기준입니다. 맨 앞에 ${EXCEPTION_MARK} 를 붙입니다.`)
+      if (!hasError && c.exception) report.warn('REQ019', f, c.line, `${id}: "에러:" 가 없는 기준에는 ${EXCEPTION_MARK} 를 붙이지 않습니다.`)
     }
   }
 

@@ -1,6 +1,6 @@
 {
   "name": "spec-mirror",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "명세가 원본이 되는 스펙 주도 개발. 기능은 requirements → design → tasks, 버그는 bugfix → design → tasks 로 단계마다 승인받으며 진행하고, 정해진 형식을 검사기와 훅으로 지키게 합니다.",
   "author": {
     "name": "b2aconnn",
