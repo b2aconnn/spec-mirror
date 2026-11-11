@@ -382,7 +382,7 @@ class OrderCancelService(
         val updated = paymentRepository.failReady(orderId, "ORDER_CANCELED", "주문 취소", clock.instant())
         if (updated == 0) throw PaymentException(PaymentErrorCode.PAYMENT_IN_PROGRESS)
 
-        synchronizer.changeOrderStatus(order, OrderStatus.CANCELED, reason = "ORDER_CANCELED")
+        synchronizer.cancel(orderId)
         return OrderResponse.of(orderRepository.findByOrderId(orderId)!!, paymentRepository.findByOrderId(orderId)!!)
     }
 }
@@ -423,14 +423,14 @@ class PaymentStateService(...) {
     @Transactional
     fun markDone(pg: PgPayment): PaymentResult {
         val updated = repository.markDone(...)          // 기존 그대로
-        if (updated == 1) synchronizer.onPaymentDone(pg.orderId)       // 추가: 주문 결제 완료
+        if (updated == 1) synchronizer.markPaid(pg.orderId)            // 추가: 주문 결제 완료
         // ... 정합성 경보 (기존 그대로)
     }
 
     @Transactional
     fun markFailed(orderId: String, code: String, message: String?) {
         val updated = repository.markFailed(...)        // 반환값을 확인하도록 변경
-        if (updated == 1) synchronizer.onPaymentFailed(orderId, code)  // 추가: 주문 결제 실패
+        if (updated == 1) synchronizer.markPaymentFailed(orderId, code) // 추가: 주문 결제 실패
     }
 }
 ```
@@ -457,16 +457,21 @@ class OrderPaymentSynchronizer(
 
     /** 결제 승인 완료 → 주문 결제 완료 */
     @Transactional(propagation = Propagation.MANDATORY)
-    fun onPaymentDone(orderId: String) = change(orderId, OrderStatus.PAID, reason = "PAYMENT_DONE")
+    fun markPaid(orderId: String) = change(orderId, OrderStatus.PAID, reason = "PAYMENT_DONE")
 
     /** 결제 실패 확정 → 주문 결제 실패 */
     @Transactional(propagation = Propagation.MANDATORY)
-    fun onPaymentFailed(orderId: String, failCode: String) = change(orderId, OrderStatus.PAYMENT_FAILED, reason = failCode)
+    fun markPaymentFailed(orderId: String, failCode: String) = change(orderId, OrderStatus.PAYMENT_FAILED, reason = failCode)
 
-    /** 주문 취소·기한 만료처럼 주문 쪽에서 시작하는 변경 */
+    /** 결제 전 주문 취소 → 주문 취소 */
     @Transactional(propagation = Propagation.MANDATORY)
-    fun changeOrderStatus(order: Order, to: OrderStatus, reason: String) = change(order.orderId, to, reason)
+    fun cancel(orderId: String) = change(orderId, OrderStatus.CANCELED, reason = "ORDER_CANCELED")
 
+    /** 결제 기한 만료 → 기한 만료 */
+    @Transactional(propagation = Propagation.MANDATORY)
+    fun expire(orderId: String) = change(orderId, OrderStatus.EXPIRED, reason = "ORDER_EXPIRED")
+
+    /** 전이 공통 처리. 바깥에는 위의 행위 이름으로만 엽니다 */
     private fun change(orderId: String, to: OrderStatus, reason: String) {
         val order = orderRepository.findByOrderId(orderId)!!
         val updated = orderRepository.changeStatusFromPending(orderId, to, clock.instant())
@@ -482,6 +487,7 @@ class OrderPaymentSynchronizer(
 
 **구현 책임:**
 - 승인 응답, 즉시 조회, 대사 — 어느 경로로 결제가 확정되든 같은 방식으로 주문에 반영
+- 바깥에는 전이마다 행위 이름(`markPaid`, `markPaymentFailed`, `cancel`, `expire`)으로만 열고, 공통 처리 `change`는 `private`
 - 주문 상태가 바뀔 때마다 INFO 로그
 - 종결된 주문(결제 완료·결제 실패·취소·만료)의 상태는 다시 바꾸지 않음
 
@@ -530,7 +536,7 @@ class OrderExpirer(
     fun expire(orderId: String) {
         val updated = paymentRepository.failReadyExpired(orderId, "ORDER_EXPIRED", "결제 기한 만료", clock.instant())
         if (updated == 0) return
-        synchronizer.changeOrderStatus(orderRepository.findByOrderId(orderId)!!, OrderStatus.EXPIRED, reason = "ORDER_EXPIRED")
+        synchronizer.expire(orderId)
     }
 }
 ```

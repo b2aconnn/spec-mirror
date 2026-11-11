@@ -230,6 +230,18 @@ export function checkDesign(dir, req, root, report, { draft = false } = {}) {
     }
   }
 
+  // DES016 Glossary 용어가 도메인 용어 ↔ 코드 표에 있어야 한다
+  const data = design.files[2]
+  if (req?.terms?.length && data.exists) {
+    const sec = subsection(data.lines, /^### 도메인 용어 ↔ 코드\s*$/)
+    if (sec) {
+      const firstCells = sec.body.filter(({ line }) => /^\|/.test(line) && !/^\|\s*-/.test(line)).slice(1).map(({ line }) => line.split('|')[1] || '')
+      for (const term of req.terms) {
+        if (!firstCells.some((c) => c.includes(term))) report.warn('DES016', fd, sec.line, `Glossary 용어 "${term}" 이(가) "도메인 용어 ↔ 코드" 표에 없습니다. 코드 이름을 적으세요.`)
+      }
+    }
+  }
+
   const fp = rel(root, design.files[6].path)
   // DES007 · DES008 · DES010 Prework
   for (const p of design.prework) {

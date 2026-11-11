@@ -185,6 +185,7 @@ mutationCases('design 설계 규모', 'order', 'design/01-architecture.md', [
 ])
 
 mutationCases('design Aggregates', 'order', 'design/03-data-models.md', [
+  ['DES016', 'Glossary 용어가 용어 표에 없음', '| 주문명 | `Order.orderName` |\n', '', 'warning'],
   ['DES006', 'Aggregates 섹션 누락', '### Aggregates', '### 집합'],
   ['DES015', '없는 기준 참조', 'Requirements 6.24, 6.25, 6.26', 'Requirements 6.24, 6.25, 6.27'],
 ])
@@ -551,6 +552,15 @@ describe('추적', () => {
     assert.ok(t.orderIssues.some((o) => /R1-2 가 R1-3 보다 아래/.test(o.message)))
     assert.ok(!t.messages.some((m) => m.id === 'R1-2'))
     assert.ok(t.messages.some((m) => m.id === 'R1-3'))
+  })
+
+  test('기능: Glossary 상태 값이 코드에 없으면 알린다 (코드가 없으면 건너뜀)', () => {
+    const p = project()
+    assert.deepEqual(trace(p.dir, p.config(), 'wishlist').states, [])
+    p.write('src/main/SaleStatus.kt', 'enum class SaleStatus { ON_SALE, NOT_ON_SALE }\n')
+    const t = trace(p.dir, p.config(), 'wishlist')
+    assert.deepEqual(t.states.map((x) => x.value), ['DISCONTINUED'])
+    assert.equal(t.states[0].term, '판매 종료')
   })
 
   test('버그: 기능 기준(R6-21c) 테스트와 버그 이름이 있는 B 테스트를 찾는다', () => {

@@ -32,6 +32,7 @@ allowed-tools: Bash(node *spec-mirror.mjs* gate*), Bash(node *spec-mirror.mjs* n
    - 언어, 테스트 도구, 테스트 실행 명령, 주석 문법, 가짜 구현(fake)·고정 시계 위치
    - 찾는 곳: design(기능은 05·08, 버그는 Testing Strategy), 설정 `techContext` 문서, 기존 테스트
    - 테스트 실행 명령을 찾을 수 없으면 사용자에게 묻습니다.
+   - **이름**: design 03의 `도메인 용어 ↔ 코드` 표와 design 규칙의 "이름 짓기"를 읽습니다. 클래스 · 필드 · 변수는 표의 이름을, 상태 전이는 행위 메서드 이름을 씁니다. 표에 없는 도메인 개념의 이름이 필요하면 지어내지 말고 멈춰서 보고합니다.
 
 5. **태스크 종류별로 진행합니다.**
 
@@ -44,6 +45,7 @@ allowed-tools: Bash(node *spec-mirror.mjs* gate*), Bash(node *spec-mirror.mjs* n
      - design 02의 인터페이스대로 구현합니다.
      - 처리 흐름 기준은 분기 바로 위에 `R{N}-{M}` 주석을 **번호 순서대로** 답니다. 항상 지켜야 할 규칙은 보장 위치에 답니다.
      - 에러 메시지는 requirements와 글자까지 같게 씁니다.
+     - 이름은 표와 같게 씁니다. 상태 값은 Glossary의 `ENUM` 그대로이고, 상태를 바꾸는 메서드는 `cancel()`처럼 행위 이름입니다. `setStatus`, `process…`, `…Manager`처럼 뜻이 흐린 이름은 쓰지 않습니다.
      - 관련 테스트를 실행해 **통과를 확인합니다 (Green).**
 
    **버그 명세**
@@ -71,7 +73,7 @@ allowed-tools: Bash(node *spec-mirror.mjs* gate*), Bash(node *spec-mirror.mjs* n
 
    **Checkpoint**
    - 전체 테스트를 실행합니다.
-   - `SM trace <이름>`으로 지금까지 구현한 범위의 불일치를 확인합니다. 버그 명세면 관련 기능 명세도 `SM trace <기능>`으로 확인합니다.
+   - `SM trace <이름>`으로 지금까지 구현한 범위의 불일치를 확인합니다. 코드에서 찾지 못한 상태 값도 이때 나옵니다. 버그 명세면 관련 기능 명세도 `SM trace <기능>`으로 확인합니다.
    - 결과를 보고하고 멈춥니다.
 
 6. **태스크를 체크합니다.** 끝난 태스크를 `[x]`로 바꿉니다. 모든 필수 하위 태스크가 끝나면 상위 태스크도 체크합니다. 체크 표시와 `결과:` 줄은 tasks 승인에 영향을 주지 않습니다.

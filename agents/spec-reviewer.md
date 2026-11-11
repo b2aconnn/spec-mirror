@@ -50,6 +50,7 @@ Bash는 읽기 전용으로만 씁니다. 예: `node <scripts>/spec-mirror.mjs c
 9. **과하게 나눔.** 02에서 분리 조건이 없는 컴포넌트, 한 흐름에서만 쓰는 Validator, 구현이 하나뿐인 내부 인터페이스, 호출만 넘기는 계층, 규모 표에서 "쓰지 않음"인 도구(작은 기능의 Domain Event · 포트 등)를 찾습니다.
 10. **덜 나눔.** 규모가 보통 이상인데 상태 전이나 불변식이 Application Service에 흩어져 있지 않은가? Aggregate 밖에서 상태를 직접 바꾸지 않는가?
 11. **Aggregate 경계.** 03 Aggregates의 "지키는 규칙"이 requirements의 항상 지켜야 할 규칙과 상태 전이 기준을 덮는가? 여러 Aggregate에 걸친 규칙은 어디서 어떻게 지키는지(한 트랜잭션 또는 이벤트)와 근거 기준이 있는가? 다른 Aggregate를 객체로 참조하지 않는가?
+12. **이름.** 02 · 03의 클래스 · 필드 · 메서드 이름이 Glossary 영문 표기와 같은가? 동의어가 섞이지 않았는가? 상태 전이가 행위 이름(`cancel`, `expire`)인가, `setStatus` · `changeStatus(to)`가 바깥에 열려 있지 않은가? `…Manager` · `…Helper` · `process…` · `data`처럼 뜻이 흐린 이름이 없는가? Glossary에 없는 도메인 이름을 지어내지 않았는가?
 
 ## tasks 리뷰 항목 (기능)
 

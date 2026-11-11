@@ -90,6 +90,25 @@ requirements를 읽고 신호마다 해당하는 칸을 고릅니다. **가장 �
 - 조회만 하는 흐름을 위해 Aggregate를 거치는 경로. 조회는 조회용 쿼리로 바로 읽어도 됩니다
 - 규모 표에서 "쓰지 않음"인 도구
 
+## 이름 짓기
+
+코드의 이름은 **requirements의 말**에서 옵니다. 코드를 읽는 사람이 requirements의 Glossary와 기준 문장을 떠올릴 수 있어야 합니다. design 03의 `### 도메인 용어 ↔ 코드` 표가 그 대응표이고, implement는 이 표대로 이름을 짓습니다.
+
+1. **도메인 개념은 Glossary 영문 표기를 씁니다.** 클래스, 필드, 변수, 매개변수 모두 같습니다. 예: 주문 (Order) → `Order`, `orderId`. 결제 기한 (Expires At) → `expiresAt`.
+   - 같은 개념은 어디서나 같은 이름입니다. 동의어를 섞지 않습니다(예: `order`와 `purchase`).
+   - Glossary에 없는 도메인 개념에 이름이 필요하면 코드에서 지어내지 않습니다. "requirements 보완 필요"로 보고하고 Glossary에 먼저 넣습니다.
+2. **상태 값은 Glossary의 `ENUM` 값 그대로**입니다. 예: 결제 대기 (`PENDING_PAYMENT`) → `OrderStatus.PENDING_PAYMENT`
+3. **상태를 바꾸는 메서드는 도메인 행위 이름**입니다. 기준 문장의 동사나 도착 상태에서 가져옵니다. 예: `cancel()`, `expire()`, `markPaid()`
+   - `setStatus(to)`, `changeStatus(to)`, `update(...)`처럼 어떤 전이인지 숨기는 메서드를 바깥에 두지 않습니다.
+   - 조건부 갱신처럼 저장 계층에서 하나로 묶어야 하면 그 메서드는 저장 계층이나 `private`에만 두고, 바깥에는 행위 이름으로 감쌉니다.
+4. **유스케이스 메서드는 첫 기준의 행위 이름**입니다. "회원은 ~할 수 있다"의 동사를 씁니다. 예: 주문 접수 → `place`, 찜하기 → `add`, 주문 취소 → `cancel`
+5. **기술 역할 접미사는 프로젝트 관례대로** 씁니다(`Repository`, `Controller`, `Adapter`, `Scheduler`, `Exception`). 앞부분은 도메인 용어입니다. 예: `OrderRepository`
+6. **뜻이 흐린 이름은 쓰지 않습니다.**
+   - 클래스: `…Manager`, `…Helper`, `…Util`, `…Processor`, `…Info`, `…Data`
+   - 메서드: `process…`, `handle…`, `do…`, `execute`, `run` (프레임워크가 정한 이름은 예외)
+   - 변수: `data`, `info`, `temp`, `result`, `obj`처럼 무엇인지 말하지 않는 이름
+7. **03 표에 이름을 모두 적습니다.** Glossary 용어마다 코드 이름을 적고, 상태 묶음은 enum 이름을, 상태 전이는 행위 메서드를 적습니다. 새 이름이 생기면 표를 먼저 고칩니다.
+
 ## design.md (목차)
 
 ```markdown
@@ -227,7 +246,7 @@ requirements를 읽고 신호마다 해당하는 칸을 고릅니다. **가장 �
   - 규모가 작음이면 "해당 없음 — 설계 규모 작음: <이유>"라고 씁니다.
   - 보통 이상이면 표를 씁니다. `지키는 규칙`에는 그 Aggregate가 지키는 "항상 지켜야 할 규칙"과 상태 전이 기준을 `Requirements N.M`으로 적습니다.
   - Aggregate는 한 트랜잭션에서 함께 일관돼야 하는 것만 묶습니다. 다른 Aggregate는 객체가 아니라 ID로 참조합니다.
-- **`### 도메인 용어 ↔ 코드`는 필수**입니다. requirements Glossary의 모든 용어가 이 표에 있어야 합니다.
+- **`### 도메인 용어 ↔ 코드`는 필수**입니다. requirements Glossary의 모든 용어가 이 표의 첫 열에 있어야 합니다. 코드 이름은 [이름 짓기](#이름-짓기)를 따릅니다.
 - API 예시의 값은 05의 테스트 기준 데이터와 같은 값을 씁니다.
 
 ## 04 Error Handling
@@ -340,5 +359,6 @@ design을 쓰기 전에 다음 순서로 프로젝트의 기술 맥락을 확인
 | DES013 | 경고 | 02 컴포넌트 수가 규모 기준을 넘음 (작음 4개 이상, 보통 8개 이상) — 과하게 나눴는지 확인 |
 | DES014 | 경고 | 규모와 Aggregates가 맞지 않음 (보통 · 큼인데 "해당 없음", 작음인데 Aggregate 표가 있음) |
 | DES015 | 오류 | Aggregates 표의 `Requirements N.M`이 requirements에 없음 |
+| DES016 | 경고 | Glossary 용어가 03 `### 도메인 용어 ↔ 코드` 표의 첫 열에 없음 |
 
 DES006의 필수 하위 섹션에는 01 `### 설계 규모` · `### 도메인 경계`, 03 `### Aggregates`도 들어갑니다.

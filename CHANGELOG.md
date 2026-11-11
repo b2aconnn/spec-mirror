@@ -2,6 +2,17 @@
 
 이 프로젝트의 변경 이력입니다. 버전은 [Semantic Versioning](https://semver.org/)을 따릅니다.
 
+## [0.3.0] - 2026-11-11
+
+### 추가
+- design 규칙 "이름 짓기": 도메인 개념은 Glossary 영문 표기, 상태 값은 Glossary `ENUM` 그대로, 상태 전이는 행위 메서드(`cancel`, `expire`), 유스케이스는 첫 기준의 동사, 뜻이 흐린 이름(`…Manager`, `process…`, `data`) 금지
+- 검사 DES016(경고): Glossary 용어가 03 `도메인 용어 ↔ 코드` 표에 없음
+- `trace`: Glossary 상태 값이 코드에 없으면 알림
+- implement는 03 표대로 이름을 짓고, 표에 없는 도메인 개념은 멈춰서 보고. sync · 리뷰어에 이름 점검 항목
+
+### 변경
+- 예제 order: 용어 표에 빠진 Glossary 용어 추가, 주문 상태 전이를 `markPaid` · `markPaymentFailed` · `cancel` · `expire`로 나눔 (`changeOrderStatus` 제거)
+
 ## [0.2.0] - 2026-11-11
 
 ### 추가

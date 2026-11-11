@@ -294,12 +294,18 @@ PENDING_PAYMENT ──(결제 승인 완료)──▶ PAID
 | 회원 | `memberId` (`X-Member-Id` 헤더) |
 | 상품 카탈로그 | `ProductCatalog`, `HttpProductCatalog` |
 | 주문 / 주문 항목 | `Order` / `OrderItem` |
+| 주문 접수 | `OrderPlaceService.place` |
 | 주문번호 | `Order.orderId` (= `Payment.orderId` = PG orderId) |
-| 주문 금액 | `Order.totalAmount` (= `Payment.amount`) |
+| 항목 금액 / 주문 금액 | `OrderItem.lineAmount` / `Order.totalAmount` (= `Payment.amount`) |
+| 주문명 | `Order.orderName` |
+| 주문 상태 | `OrderStatus` (`Order.status`). 전이: `OrderPaymentSynchronizer.markPaid` · `markPaymentFailed` · `cancel` · `expire` |
+| 결제 상태 | `PaymentStatus` (`Payment.status`, 기존) |
+| 결제 승인 | `PaymentStateService.begin` → PG 승인 → `markDone` / `markFailed` (기존) |
 | 결제 기한 | `Order.expiresAt` (= `Payment.expiresAt`) |
 | 결제 실패 사유 | `Payment.failCode` |
 | 중복 주문 방지 키 | `Idempotency-Key` 헤더 → `Order.idempotencyKey` |
 | 대사 | `PaymentReconciler` |
+| 정합성 경보 | ERROR 로그 `[정합성 경보] …` (`OrderPaymentSynchronizer`, `PaymentStateService`) |
 
 ### API Endpoints
 

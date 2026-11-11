@@ -58,7 +58,7 @@ function findTokens(sources, letter, filter = () => true) {
 
 export function traceFeature(root, config, name, sources = loadSources(root, config)) {
   const { first: req, report, type } = checkSpec(root, config, name)
-  if (type !== 'feature' || !req) return { name, type, error: type === 'bugfix' ? null : 'requirements.md 가 없습니다.', rows: [], orphans: [], orderIssues: [], messages: [] }
+  if (type !== 'feature' || !req) return { name, type, error: type === 'bugfix' ? null : 'requirements.md 가 없습니다.', rows: [], orphans: [], orderIssues: [], messages: [], states: [] }
   const hits = new Map()
   const hit = (key) => hits.get(key) || hits.set(key, { tests: [], code: [] }).get(key)
   const orphans = []
@@ -108,7 +108,19 @@ export function traceFeature(root, config, name, sources = loadSources(root, con
       }
     }
   }
-  return { name, type, rows, orphans, orderIssues, messages, formatErrors: report.errors.length }
+  // Glossary 상태 값(`ENUM`)이 코드에 그대로 있는지 (코드가 하나도 없으면 건너뜀)
+  const states = []
+  if (code.length) {
+    for (const g of req.glossary) {
+      for (const ch of g.children) {
+        const sm = ch.text.match(/^(.+?)\s*\(`([A-Z][A-Z0-9_]*)`\)/)
+        if (!sm) continue
+        const re = new RegExp(`\\b${sm[2]}\\b`)
+        if (!code.some((s) => re.test(s.text))) states.push({ term: sm[1].trim(), value: sm[2], issue: '코드에서 같은 상태 값을 찾지 못함' })
+      }
+    }
+  }
+  return { name, type, rows, orphans, orderIssues, messages, states, formatErrors: report.errors.length }
 }
 
 /**
@@ -141,7 +153,7 @@ export function traceBugfix(root, config, name, sources = loadSources(root, conf
       rows.push({ id: `${group}.${c.number}`, ref: refs.map((r) => r.raw).join(', ') || (c.specLinks[0]?.kind === 'new' ? '새 기준' : '—'), rule: c.rule ? normalizeTitle(c.rule) : c.text, tests, code, issues })
     }
   }
-  return { name, type, rows, orphans: [], orderIssues: [], messages: [], formatErrors: report.errors.length }
+  return { name, type, rows, orphans: [], orderIssues: [], messages: [], states: [], formatErrors: report.errors.length }
 }
 
 export function trace(root, config, name) {

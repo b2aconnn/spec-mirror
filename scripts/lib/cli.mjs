@@ -63,8 +63,9 @@ export function createCli({ pluginRoot, version }) {
       if (t.orphans.length) { console.log('\n코드에만 있는 번호 (문서에 없는 기준):'); t.orphans.forEach((o) => console.log(`  - ${o.id} (${o.kind === 'test' ? '테스트' : '코드'}) ${o.where}`)) }
       if (t.orderIssues.length) { console.log('\n처리 흐름 순서와 다른 주석:'); t.orderIssues.forEach((o) => console.log(`  - ${o.where} ${o.message}`)) }
       if (t.messages.length) { console.log('\n코드에서 찾지 못한 메시지:'); t.messages.forEach((m) => console.log(`  - ${m.id} "${m.message}"`)) }
+      if (t.states?.length) { console.log('\n코드에서 찾지 못한 상태 값 (Glossary):'); t.states.forEach((s) => console.log(`  - ${s.term} \`${s.value}\``)) }
     }
-    const bad = t.error || t.orphans.length || t.orderIssues.length || t.messages.length || t.rows.some((r) => r.issues.some((i) => !i.includes('확인 필요')))
+    const bad = t.error || t.orphans.length || t.orderIssues.length || t.messages.length || t.states?.length || t.rows.some((r) => r.issues.some((i) => !i.includes('확인 필요')))
     return bad ? 1 : 0
   }
 

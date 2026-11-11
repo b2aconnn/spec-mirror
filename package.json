@@ -1,6 +1,6 @@
 {
   "name": "spec-mirror",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "명세가 원본이 되는 스펙 주도 개발 Claude Code 플러그인 — 기능(requirements → design → tasks)과 버그(bugfix → design → tasks)",
   "private": true,
   "type": "module",
