@@ -2,7 +2,7 @@
 
 이 프로젝트의 변경 이력입니다. 버전은 [Semantic Versioning](https://semver.org/)을 따릅니다.
 
-## [Unreleased]
+## [0.2.0] - 2026-11-11
 
 ### 추가
 - design을 DDD로 설계하되 기능 규모에 맞춰 적용: 01 `### 설계 규모`(작음 · 보통 · 큼, 신호 표) · `### 도메인 경계`, 02 `**역할:**`(DDD 구성 요소와 분리 조건), 03 `### Aggregates` · `### Value Objects`
