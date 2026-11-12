@@ -80,6 +80,7 @@ Claude writes the spec from the code **without changing behavior**. For a whole 
 - **The format is checked automatically** on every save, and Claude fixes errors right away.
 - **A separate reviewer agent** reads each stage independently. Its findings, and what was done with them, are shown when Claude asks for approval.
 - **Design fits the feature's size.** Design follows DDD, but only as far as the feature needs. Stage 01 sets a design scale (small · medium · large) from the requirements, and that scale decides which tools are used (Aggregates, ports, events) and how many components there are. The checker warns and the reviewer flags over-split designs.
+- **Requirements are written in natural Korean by default** (`# 요구사항`, `## 개요`, `**사용자 이야기:**` …). The English frame (`# Requirements Document`, `## Introduction`, `**User Story:** As a …`) is still accepted, so existing documents keep passing the checks.
 - **Spec and code are linked by number.** One criterion maps to one test (`R1-2 …`) and one code branch (`// R1-2`). `/spec-mirror:sync` finds the gaps.
 
 ## Commands

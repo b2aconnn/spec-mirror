@@ -121,12 +121,14 @@ describe('정답 예제', () => {
 // ─────────────────────────────── 기능 명세 ───────────────────────────────
 
 mutationCases('requirements 검사', 'order', 'requirements.md', [
-  ['REQ000', '자리표시자', '- 범위 밖: 결제 완료 주문의', '- 범위 밖: <범위 밖 항목>, 결제 완료 주문의'],
-  ['REQ001', 'Open Questions 섹션 누락', '## Open Questions', '## 미정 사항'],
-  ['REQ001', '첫 줄 제목', '# Requirements Document', '# 요구사항'],
-  ['REQ002', 'Requirement 번호 건너뜀', '### Requirement 2: 중복 주문 방지', '### Requirement 3: 중복 주문 방지'],
-  ['REQ003', 'User Story 형식', '**User Story:** As a 회원, I want to 상품과 수량을 골라', '**User Story:** 회원은 상품과 수량을 골라'],
-  ['REQ004', 'Acceptance Criteria 누락', '#### Acceptance Criteria\n\n##### 처리 흐름\n\n1. 🟢 **회원은 상품과', '##### 처리 흐름\n\n1. 🟢 **회원은 상품과'],
+  ['REQ000', '자리표시자', '- 이번에 하지 않는 것: 결제 완료 주문의', '- 이번에 하지 않는 것: <범위 밖 항목>, 결제 완료 주문의'],
+  ['REQ001', '확인이 필요한 사항 섹션 누락', '## 확인이 필요한 사항', '## 미정 사항'],
+  ['REQ001', '첫 줄 제목', '# 요구사항', '# 요구 사항 문서'],
+  ['REQ002', '요구사항 번호 건너뜀', '### 요구사항 2: 중복 주문 방지', '### 요구사항 3: 중복 주문 방지'],
+  ['REQ003', '사용자 이야기 형식', '**사용자 이야기:** 회원은 상품과 수량을 골라 주문하고 싶다.', '**사용자 이야기:** 회원은 상품과 수량을 골라 주문한다.'],
+  ['REQ003', '영어 User Story 형식', '**사용자 이야기:** 회원은 상품과 수량을 골라 주문하고 싶다. 시스템이 정한 금액으로 결제하기 위해서다.', '**User Story:** 회원은 상품과 수량을 골라 주문한다'],
+  ['REQ004', '인수 조건 누락', '#### 인수 조건\n\n##### 처리 흐름\n\n1. 🟢 **회원은 상품과', '##### 처리 흐름\n\n1. 🟢 **회원은 상품과'],
+  ['REQ021', '한국어 틀과 영어 틀이 섞임', '## 확인이 필요한 사항', '## Open Questions', 'warning'],
   ['REQ005', '허용되지 않은 기준 묶음', '##### 항상 지켜야 할 규칙\n\n15.', '##### 기타 규칙\n\n15.'],
   ['REQ006', '기준 번호 건너뜀', '2. 🟠 **주문 상품은 1개 이상 20개 이하로', '3. 🟠 **주문 상품은 1개 이상 20개 이하로'],
   ['REQ007', '굵은 규칙 누락', '2. 🟠 **주문 상품은 1개 이상 20개 이하로 담을 수 있다.**', '2. 🟠 주문 상품은 1개 이상 20개 이하로 담을 수 있다.'],
@@ -148,6 +150,34 @@ mutationCases('requirements 검사', 'order', 'requirements.md', [
   ['REQ017', '상태 줄 형식', '  - 결제 대기 (`PENDING_PAYMENT`): 주문이 접수됐고', '  - 결제 대기 `PENDING_PAYMENT` (`대기`) 주문이 접수됐고', 'warning'],
 ])
 
+describe('requirements 영어 틀 호환', () => {
+  test('영어 틀(Requirements Document · Introduction · User Story …)로 써도 오류 · 경고가 없다', () => {
+    const p = project()
+    const f = p.file('wishlist', 'requirements.md')
+    let text = fs.readFileSync(f, 'utf8')
+    const swap = [['# 요구사항\n', '# Requirements Document\n'], ['## 개요\n', '## Introduction\n'], ['## 용어\n', '## Glossary\n'], ['## 기능별 요구사항\n', '## Requirements\n'], ['## 확인이 필요한 사항\n', '## Open Questions\n']]
+    for (const [ko, en] of swap) text = text.replace(ko, en)
+    text = text.replace(/^### 요구사항 (\d+):/gm, '### Requirement $1:').replaceAll('#### 인수 조건', '#### Acceptance Criteria')
+    text = text.replace(/^\*\*사용자 이야기:\*\* .*$/gm, '**User Story:** As a 회원, I want to 찜 목록을 다룰 수 있어야, so that 나중에 다시 찾아볼 수 있다')
+    fs.writeFileSync(f, text)
+    const r = p.check('wishlist')
+    assert.deepEqual(r.report.errors, [], fmt(r.report.errors))
+    assert.deepEqual(r.report.warnings, [], fmt(r.report.warnings))
+    assert.equal(r.first.requirements.length, 3)
+  })
+})
+
+describe('requirements 색 범례 위치', () => {
+  test('REQ020 범례가 Requirements 아래가 아니라 맨 위(제목 아래)에 있으면 경고', () => {
+    const p = project()
+    const f = p.file('order', 'requirements.md')
+    const legend = '| 🟢 기능 흐름 (요청 · 동작 · 응답) | 🟠 검증 | 🟣 외부 요청 |\n|---|---|---|\n\n'
+    edit(f, '## 기능별 요구사항\n\n' + legend, '## 기능별 요구사항\n\n')
+    edit(f, '# 요구사항\n\n', '# 요구사항\n\n' + legend)
+    assert.equal(warningsOf(p.check('order'), 'REQ020').length, 1)
+  })
+})
+
 describe('requirements 허용 규칙', () => {
   test('Glossary 에 나오는 약어(PG)와 형식 · 요약 항목, 이름 없는 보충 줄은 경고가 아니다', () => {
     const r = project().check('order')
@@ -162,7 +192,7 @@ describe('requirements 허용 규칙', () => {
     const p = project()
     const f = p.file('order', 'requirements.md')
     edit(f, '- 메시지: "주문 상품은 1개 이상 20개 이하로 담아주세요."', '- 메시지: "주문 상품은 1개 이상 20개 이하로 담아주세요. 적절한 수량을 고르세요."')
-    edit(f, '## Open Questions', '```\nPOST /api/orders 트랜잭션 예외 처리\n```\n\n## Open Questions')
+    edit(f, '## 확인이 필요한 사항', '```\nPOST /api/orders 트랜잭션 예외 처리\n```\n\n## 확인이 필요한 사항')
     assert.deepEqual(p.check('order').report.errors, [])
   })
 })

@@ -7,6 +7,30 @@ import { refExists, expandRefs } from './refs.mjs'
 import { labelSet, checkItems, checkLanguage, glossaryTerms } from './language.mjs'
 
 export const REQUIREMENT_SECTIONS = ['Introduction', 'Glossary', 'Requirements', 'Open Questions']
+/** 한국어 틀의 제목 → 영어 틀의 이름. 두 틀을 모두 받고, 읽을 때 영어 이름으로 맞춘다 */
+export const KO_SECTIONS = { 개요: 'Introduction', 용어: 'Glossary', '기능별 요구사항': 'Requirements', '확인이 필요한 사항': 'Open Questions' }
+const SECTION_KO = Object.fromEntries(Object.entries(KO_SECTIONS).map(([ko, en]) => [en, ko]))
+/** 오류 메시지용: "## Open Questions"(또는 "## 확인이 필요한 사항") */
+export const sectionLabel = (en) => `"## ${en}"(또는 "## ${SECTION_KO[en]}")`
+
+/** 한국어 제목 줄을 영어 틀 이름으로 바꾼다. → [줄, 'ko' | 'en' | null] */
+function normalizeHeading(line) {
+  let m
+  if ((m = line.match(/^## (.+?)\s*$/))) {
+    if (KO_SECTIONS[m[1]]) return [`## ${KO_SECTIONS[m[1]]}`, 'ko']
+    return [line, REQUIREMENT_SECTIONS.includes(m[1]) ? 'en' : null]
+  }
+  if ((m = line.match(/^### 요구사항 (\d+):(.*)$/))) return [`### Requirement ${m[1]}:${m[2]}`, 'ko']
+  if (/^### Requirement \d+:/.test(line)) return [line, 'en']
+  if (/^#### 인수 조건\s*$/.test(line)) return ['#### Acceptance Criteria', 'ko']
+  if (/^#### Acceptance Criteria\s*$/.test(line)) return [line, 'en']
+  return [line, null]
+}
+
+const TITLE_RE = /^# (Requirements Document|요구사항)\s*$/
+const STORY_RE = /^\*\*(User Story|사용자 이야기):\*\*/
+const STORY_EN_RE = /^\*\*User Story:\*\* As an? .+, I want to .+, so that .+/
+const STORY_KO_RE = /^\*\*사용자 이야기:\*\*\s*\S.*싶다\.\s*\S.*위해서(다|입니다)\.?\s*$/
 export const CRITERIA_GROUPS = ['처리 흐름', '항상 지켜야 할 규칙']
 export const FLOW = CRITERIA_GROUPS[0]
 export const RULES = CRITERIA_GROUPS[1]
@@ -34,8 +58,16 @@ export function parseGlossary(masked, section = 'Glossary') {
 
 export function parseRequirements(file) {
   const raw = readText(file).split('\n')
-  const lines = maskFences(raw)
-  const doc = { file, kind: 'requirements', raw, lines, sections: h2List(lines), requirements: [] }
+  const frames = { ko: 0, en: 0 }
+  const lines = maskFences(raw).map((line, i) => {
+    if (i === 0) { if (/^# 요구사항\s*$/.test(line)) frames.ko++; else if (/^# Requirements Document\s*$/.test(line)) frames.en++; return line }
+    const [out, frame] = normalizeHeading(line)
+    if (frame) frames[frame]++
+    if (/^\*\*사용자 이야기:\*\*/.test(line)) frames.ko++
+    if (/^\*\*User Story:\*\*/.test(line)) frames.en++
+    return out
+  })
+  const doc = { file, kind: 'requirements', raw, lines, frames, sections: h2List(lines), requirements: [] }
   doc.glossary = parseGlossary(lines)
 
   let section = null
@@ -55,7 +87,7 @@ export function parseRequirements(file) {
     }
     if (!req) return
     if (/^#{3,4} /.test(line) && !/^#### Acceptance Criteria\s*$/.test(line)) { req.badHeadings.push({ line: ln, text: line }); return }
-    if (/^\*\*User Story:\*\*/.test(line)) { req.userStory = { line: ln, text: line }; return }
+    if (STORY_RE.test(line)) { req.userStory = { line: ln, text: line }; return }
     if (/^#### Acceptance Criteria\s*$/.test(line)) { req.hasAC = true; return }
     if ((m = line.match(/^##### (.+?)\s*$/))) { group = m[1]; req.groups.push({ name: group, line: ln }); crit = null; return }
     if ((m = line.match(/^(\d+)\.\s+(.*)$/))) {
@@ -80,9 +112,10 @@ export function checkRequirements(file, root, config, report, { loadFeature } = 
   const f = rel(root, file)
 
   // REQ001 제목 · 섹션 구성과 순서
-  if (!/^# Requirements Document\s*$/.test(doc.raw[0] || '')) report.error('REQ001', f, 1, '첫 줄은 "# Requirements Document" 여야 합니다.')
+  if (!TITLE_RE.test(doc.raw[0] || '')) report.error('REQ001', f, 1, '첫 줄은 "# 요구사항" 또는 "# Requirements Document" 여야 합니다.')
+  if (doc.frames.ko && doc.frames.en) report.warn('REQ021', f, 1, '한국어 틀(요구사항 · 개요 · 사용자 이야기 …)과 영어 틀(Requirements Document · Introduction · User Story …)이 섞여 있습니다. 한쪽으로 맞춥니다.')
   const names = doc.sections.map((s) => s.name)
-  REQUIREMENT_SECTIONS.forEach((s) => { if (!names.includes(s)) report.error('REQ001', f, 1, `"## ${s}" 섹션이 없습니다.`) })
+  REQUIREMENT_SECTIONS.forEach((s) => { if (!names.includes(s)) report.error('REQ001', f, 1, `${sectionLabel(s)} 섹션이 없습니다.`) })
   const known = names.filter((n) => REQUIREMENT_SECTIONS.includes(n))
   if (known.join('|') !== REQUIREMENT_SECTIONS.filter((n) => known.includes(n)).join('|')) {
     report.error('REQ001', f, 1, `섹션 순서가 다릅니다. 기대: ${REQUIREMENT_SECTIONS.join(' → ')}, 실제: ${known.join(' → ')}`)
@@ -104,7 +137,7 @@ export function checkRequirements(file, root, config, report, { loadFeature } = 
   doc.requirements.forEach((r, idx) => {
     if (r.number !== idx + 1) report.error('REQ002', f, r.line, `Requirement 번호가 연속되지 않습니다. 기대 ${idx + 1}, 실제 ${r.number}`)
   })
-  if (names.includes('Requirements') && doc.requirements.length === 0) report.error('REQ002', f, 1, '"### Requirement N: <기능 이름>" 이 하나도 없습니다.')
+  if (names.includes('Requirements') && doc.requirements.length === 0) report.error('REQ002', f, 1, '"### 요구사항 N: <기능 이름>" (또는 "### Requirement N:") 이 하나도 없습니다.')
 
   const labels = labelSet({ glossaries: [doc.glossary], config })
   const ids = { label: 'REQ008', error: 'REQ010', response: 'REQ011', message: 'REQ012' }
@@ -112,12 +145,12 @@ export function checkRequirements(file, root, config, report, { loadFeature } = 
   for (const r of doc.requirements) {
     const where = `Requirement ${r.number}`
     // REQ003 User Story
-    if (!r.userStory) report.error('REQ003', f, r.line, `${where}: "**User Story:** As a <역할>, I want to <행동>, so that <가치>" 가 없습니다.`)
-    else if (!/^\*\*User Story:\*\* As an? .+, I want to .+, so that .+/.test(r.userStory.text)) {
-      report.error('REQ003', f, r.userStory.line, `${where}: User Story 는 "As a <역할>, I want to <행동>, so that <가치>" 형식으로 씁니다.`)
+    if (!r.userStory) report.error('REQ003', f, r.line, `${where}: "**사용자 이야기:** <누가>는 <무엇을> 하고 싶다. <왜> 위해서다." 가 없습니다.`)
+    else if (!STORY_EN_RE.test(r.userStory.text) && !STORY_KO_RE.test(r.userStory.text)) {
+      report.error('REQ003', f, r.userStory.line, `${where}: 사용자 이야기는 "<누가>는 <무엇을> 하고 싶다. <왜> 위해서다." 형식으로 씁니다. (영어 틀: "As a <역할>, I want to <행동>, so that <가치>")`)
     }
     // REQ004 Acceptance Criteria
-    if (!r.hasAC) report.error('REQ004', f, r.line, `${where}: "#### Acceptance Criteria" 가 없습니다.`)
+    if (!r.hasAC) report.error('REQ004', f, r.line, `${where}: "#### 인수 조건" (또는 "#### Acceptance Criteria") 이 없습니다.`)
     r.badHeadings.forEach((h) => report.error('REQ005', f, h.line, `${where}: 허용되지 않은 제목입니다: ${h.text}`))
 
     // REQ005 처리 흐름 → 항상 지켜야 할 규칙
@@ -175,12 +208,12 @@ export function checkRequirements(file, root, config, report, { loadFeature } = 
       if (k === 0) continue
       if (n >= 1 && n <= doc.requirements.length) {
         if (!refExists(doc, n, k)) report.error('REQ016', f, ln, `참조 ${n}.${k} 가 없습니다. (Requirement ${n} 의 기준은 ${doc.requirements[n - 1].criteria.length}개)`)
-      } else if (n <= 99 && /에 따라|참조/.test(text.slice(m.index, m.index + 12))) {
+      } else if (n <= 99 && /에 따라|참조|참고/.test(text.slice(m.index, m.index + 12))) {
         report.error('REQ016', f, ln, `참조 ${n}.${k} 의 Requirement ${n} 이 없습니다.`)
       }
     }
     if (/^### Requirement/.test(line)) continue
-    const rr = /Requirement (\d+)/g
+    const rr = /(?:Requirement|요구사항) (\d+)(?!\.\d)/g
     while ((m = rr.exec(text))) {
       const n = Number(m[1])
       if (n < 1 || n > doc.requirements.length) report.error('REQ016', f, ln, `참조한 Requirement ${n} 이 없습니다.`)
@@ -201,11 +234,13 @@ function checkStepMark(c, id, f, report) {
   if (st.label) report.error('REQ019', f, c.line, `${id}: 색 뒤에 종류 글자(${st.label})를 쓰지 않습니다. 뜻은 문서 맨 위 범례에 있습니다.`)
 }
 
-/** REQ020 처리 흐름이 있으면 제목과 Introduction 사이에 색 범례 한 줄 */
+/** REQ020 처리 흐름이 있으면 "## Requirements" 바로 아래(첫 Requirement 앞)에 색 범례 한 줄 */
 function checkLegend(doc, f, report) {
   if (!doc.requirements.some((r) => r.criteria.some((c) => c.group === FLOW))) return
-  const intro = doc.sections.find((s) => s.name === 'Introduction')?.line ?? doc.lines.length + 1
-  const head = doc.raw.slice(1, intro - 1).join('\n')
+  const start = doc.sections.find((s) => s.name === 'Requirements')?.line
+  if (!start) return
+  const end = doc.requirements[0]?.line ?? doc.lines.length + 1
+  const head = doc.raw.slice(start, end - 1).join('\n')
   const missing = Object.keys(STEP_ICONS).filter((i) => !new RegExp(`\\|\\s*${i}`, 'u').test(head))
-  if (missing.length) report.warn('REQ020', f, 1, `제목 아래(Introduction 앞)에 색 범례 표를 둡니다: ${STEP_LEGEND.split('\n')[0]}`)
+  if (missing.length) report.warn('REQ020', f, start, `${sectionLabel('Requirements')} 바로 아래(첫 요구사항 앞)에 색 범례 표를 둡니다: ${STEP_LEGEND.split('\n')[0]}`)
 }

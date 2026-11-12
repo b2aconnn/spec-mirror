@@ -10,7 +10,7 @@
 
 ### Acceptance Criteria Testing Prework
 
-1.2 이미 찜한 상품을 다시 담아도 성공으로 본다
+1.2 이미 찜한 상품은 다시 담지 않는다
   Thoughts: 같은 상품을 몇 번 담든 결과가 같아야 하므로 무작위 반복으로 확인할 수 있다
   Classification: PROPERTY
   Test Strategy: 상품 몇 개를 무작위 순서와 횟수로 담은 뒤 찜 목록을 확인
@@ -25,7 +25,7 @@
   Classification: PROPERTY (1.2와 통합)
   Test Strategy: 1.2와 같음
 
-2.2 찜 목록에 없는 상품을 빼도 성공으로 본다
+2.2 찜 목록에 없는 상품이면 아무것도 바꾸지 않는다
   Thoughts: 대표 사례 하나로 충분하다
   Classification: EXAMPLE
   Test Strategy: 담지 않은 상품을 빼고 204와 찜 목록이 그대로인지 확인
