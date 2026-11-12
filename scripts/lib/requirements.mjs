@@ -10,9 +10,12 @@ export const REQUIREMENT_SECTIONS = ['Introduction', 'Glossary', 'Requirements',
 export const CRITERIA_GROUPS = ['처리 흐름', '항상 지켜야 할 규칙']
 export const FLOW = CRITERIA_GROUPS[0]
 export const RULES = CRITERIA_GROUPS[1]
-/** 에러로 끝나는 기준의 표시: "⛔ `예외` **…**" */
-export const EXCEPTION_MARK = '⛔ `예외`'
-const EXCEPTION_MARK_RE = /^⛔\s*`예외`\s*/
+/** 처리 흐름 기준의 색 표시: "🟠 **…**" (Cockburn 의 단계 종류) */
+export const STEP_ICONS = { '🟢': '기능 흐름 (요청 · 동작 · 응답)', '🟠': '검증', '🟣': '외부 요청' }
+/** 문서 맨 위(제목과 Introduction 사이)에 두는 한 줄 범례 */
+export const STEP_LEGEND = `| ${Object.entries(STEP_ICONS).map(([i, n]) => `${i} ${n}`).join(' | ')} |\n|${'---|'.repeat(Object.keys(STEP_ICONS).length)}`
+const STEP_ICON_LIST = Object.keys(STEP_ICONS).join(' ')
+const STEP_MARK_RE = /^(\p{Extended_Pictographic}\uFE0F?)\s*(`[^`]+`\s*)?(?=\*\*)/u
 
 /** Glossary 줄 묶음: "- **용어**: 정의" 와 그 아래 들여쓴 "  - 하위 항목" */
 export function parseGlossary(masked, section = 'Glossary') {
@@ -56,8 +59,9 @@ export function parseRequirements(file) {
     if (/^#### Acceptance Criteria\s*$/.test(line)) { req.hasAC = true; return }
     if ((m = line.match(/^##### (.+?)\s*$/))) { group = m[1]; req.groups.push({ name: group, line: ln }); crit = null; return }
     if ((m = line.match(/^(\d+)\.\s+(.*)$/))) {
-      const exception = EXCEPTION_MARK_RE.test(m[2])
-      crit = { number: Number(m[1]), text: m[2].replace(EXCEPTION_MARK_RE, ''), exception, line: ln, group, items: [] }
+      const mark = m[2].match(STEP_MARK_RE)
+      const step = mark ? { icon: mark[1], label: mark[2]?.trim() ?? null } : null
+      crit = { number: Number(m[1]), text: mark ? m[2].slice(mark[0].length) : m[2], step, line: ln, group, items: [] }
       req.criteria.push(crit)
       return
     }
@@ -140,12 +144,12 @@ export function checkRequirements(file, root, config, report, { loadFeature } = 
       if (!c.rule) report.error('REQ007', f, c.line, `${id}: 첫 줄은 굵은 글씨의 비즈니스 규칙(**...**)으로 시작해야 합니다.`)
       // REQ008 · REQ010 · REQ011 · REQ012 세부 항목
       checkItems({ items: c.items, id, labels, file: f, report, ids, config })
-      // REQ019 에러로 끝나는 기준에는 ⛔ `예외` 표시
-      const hasError = c.items.some((it) => /^에러\s*[:：]/.test(it.text))
-      if (hasError && !c.exception) report.warn('REQ019', f, c.line, `${id}: 에러로 끝나는 기준입니다. 맨 앞에 ${EXCEPTION_MARK} 를 붙입니다.`)
-      if (!hasError && c.exception) report.warn('REQ019', f, c.line, `${id}: "에러:" 가 없는 기준에는 ${EXCEPTION_MARK} 를 붙이지 않습니다.`)
+      // REQ019 처리 흐름 기준에는 색 표시, 항상 지켜야 할 규칙에는 표시 없음
+      checkStepMark(c, id, f, report)
     }
   }
+
+  checkLegend(doc, f, report)
 
   // REQ013 금지 표현 · REQ014 기술 용어 · REQ015 코드 식별자 (Glossary · Requirements 본문)
   checkLanguage({ lines: sectionLines(doc.lines, ['Glossary', 'Requirements']), file: f, report, ids: { forbidden: 'REQ013', tech: 'REQ014', ident: 'REQ015' } })
@@ -183,4 +187,25 @@ export function checkRequirements(file, root, config, report, { loadFeature } = 
     }
   }
   return doc
+}
+
+function checkStepMark(c, id, f, report) {
+  const st = c.step
+  if (c.group === RULES) {
+    if (st) report.error('REQ019', f, c.line, `${id}: 항상 지켜야 할 규칙에는 색 표시를 붙이지 않습니다.`)
+    return
+  }
+  if (c.group !== FLOW) return
+  if (!st) { report.error('REQ019', f, c.line, `${id}: 처리 흐름 기준 맨 앞에 색을 표시합니다: ${STEP_ICON_LIST}`); return }
+  if (!(st.icon in STEP_ICONS)) report.error('REQ019', f, c.line, `${id}: 표시 ${st.icon} 는 없습니다. ${STEP_ICON_LIST} 중 하나입니다.`)
+  if (st.label) report.error('REQ019', f, c.line, `${id}: 색 뒤에 종류 글자(${st.label})를 쓰지 않습니다. 뜻은 문서 맨 위 범례에 있습니다.`)
+}
+
+/** REQ020 처리 흐름이 있으면 제목과 Introduction 사이에 색 범례 한 줄 */
+function checkLegend(doc, f, report) {
+  if (!doc.requirements.some((r) => r.criteria.some((c) => c.group === FLOW))) return
+  const intro = doc.sections.find((s) => s.name === 'Introduction')?.line ?? doc.lines.length + 1
+  const head = doc.raw.slice(1, intro - 1).join('\n')
+  const missing = Object.keys(STEP_ICONS).filter((i) => !new RegExp(`\\|\\s*${i}`, 'u').test(head))
+  if (missing.length) report.warn('REQ020', f, 1, `제목 아래(Introduction 앞)에 색 범례 표를 둡니다: ${STEP_LEGEND.split('\n')[0]}`)
 }
