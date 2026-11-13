@@ -4,7 +4,7 @@
 
 기존 결제 승인 시스템(Spring Boot + Kotlin, 토스페이먼츠)에 주문 기능을 추가합니다. 회원이 상품과 수량을 골라 주문하면 시스템이 주문 금액을 계산하고, 주문과 함께 만들어진 결제로 승인하며, 결제 결과를 주문 상태에 반영합니다. 결제 전 주문 취소와 결제 기한 만료도 포함합니다.
 
-구현은 공통 기반과 도메인 모델부터 시작하여 주문 접수, 결제 연동, 조회, 취소, 만료 순으로 진행하며, 각 단계마다 테스트를 먼저 작성하고(Red) 구현합니다(Green). 테스트는 design 05의 `기준 ↔ 테스트 계층`대로 도메인은 유닛, Service는 통합, Controller는 E2E로 쓰고, 모두 BDD 시나리오입니다.
+구현은 공통 기반과 도메인 모델부터 시작하여 주문 접수, 결제 연동, 조회, 취소, 만료 순으로 진행하며, 각 단계마다 테스트를 먼저 작성하고(Red) 구현합니다(Green). 테스트는 design 05의 `기준 ↔ 테스트`대로 쓰고(convention: 도메인은 유닛, Service는 통합, Controller는 E2E), 모두 BDD 시나리오입니다.
 
 ## Tasks
 
@@ -180,7 +180,7 @@
 
   - [ ] 10.2 신규 테스트 작성: PaymentConfirmIntegrationTest, OrderPaymentE2ETest
     - 통합: 취소·만료된 주문은 결제할 수 없음, 승인 완료·실패 후 주문 상태, 결제 기한(1초 전 / 정각 / 1초 후)
-    - E2E: 결제 준비 기능 없음, 에러 응답 `ORDER_NOT_PAYABLE` 외 결제 에러 코드마다 대표 시나리오 (design 05 "에러 ↔ E2E 시나리오")
+    - E2E: 결제 준비 기능 없음, 에러 응답 `ORDER_NOT_PAYABLE` 외 결제 에러 코드마다 대표 시나리오 (design 05 "에러 ↔ 응답 테스트")
     - _Requirements: 6.9, 6.10, 6.17, 6.18, 6.19, 6.26_
 
   - [ ] 10.3 PaymentStateService, PaymentController 변경
@@ -277,7 +277,7 @@
 
 - [ ] 16. 최종 Checkpoint - 명세 동기화
   - 모든 기준에 대응하는 테스트(`R{N}-{M}`)와 코드 주석(`// R{N}-{M}`) 확인
-  - 에러 코드마다 응답 코드를 확인하는 E2E 시나리오가 있는지 확인
+  - 에러 코드마다 회원이 받는 응답을 확인하는 시나리오가 있는지 확인
   - 에러 메시지가 requirements.md와 글자까지 같은지 확인
   - 코드 주석 순서가 요구사항 번호 순서와 같은지 확인
   - README.md 갱신 (흐름, DDL, 결제 준비 API 제거)
@@ -286,7 +286,7 @@
 ## Notes
 
 - **테스트 우선**: 각 기능은 테스트를 먼저 작성해 실패를 확인한 뒤 구현합니다
-- **테스트 계층**: 도메인(`OrderLines`, `OrderDraft`, `OrderFingerprint`)은 유닛, Application Service는 통합, Controller는 E2E입니다. 유닛 · 통합은 거절을 예외로, E2E는 응답 코드까지 확인합니다
+- **테스트 종류** (convention): 도메인(`OrderLines`, `OrderDraft`, `OrderFingerprint`)은 유닛, Application Service는 통합, Controller는 E2E입니다. 유닛 · 통합은 거절을 예외로, E2E는 응답 코드까지 확인합니다
 - **테스트 형식**: BDD 시나리오(given / when / then)이고 이름은 `` `R{N}-{M} <상황>이면 <결과>다` `` 입니다. 결과가 다르면 `R1-2a`, `R1-2b`로 나누고, 결과가 같은 경계값은 파라미터 테스트의 예시로 묶습니다
 - **Property 테스트**: `*` 표시된 태스크는 선택적입니다. 시나리오 테스트가 대표 사례를 이미 검증하며, Property 테스트는 무작위 입력으로 범위를 넓힙니다
 - **테스트 환경**: 통합 · E2E는 H2(MySQL 모드) + `FakePgClient` + `FakeProductCatalog` + 고정 `Clock`, 유닛은 도메인 객체만

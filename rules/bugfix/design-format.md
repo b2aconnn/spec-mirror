@@ -140,7 +140,7 @@ END FUNCTION
 - 고칠 곳마다 `**File:**`, `**Function:**`, `**Specific Changes:**`(번호 목록)를 씁니다.
 - 코드 조각은 프로젝트의 실제 언어로 씁니다. 분기에 다는 `R{N}-{M}` 주석도 보여 줍니다.
 - **바꾸지 않는 것**과 그 이유(어떤 유지할 동작을 지키기 위해서인지)를 씁니다. 고치는 범위를 최소로 유지합니다.
-- 관련 기능 design의 설계 규모와 Aggregate 경계를 따릅니다. 버그를 고치면서 구조를 바꾸지 않습니다. 원인이 구조(예: 불변식이 Aggregate 밖에 흩어짐)이면 원인에 그렇게 쓰고, 구조 변경은 기능 명세 변경으로 따로 제안합니다.
+- 관련 기능 design과 convention의 구조를 따릅니다. 버그를 고치면서 구조를 바꾸지 않습니다. 원인이 구조(예: 규칙이 여러 곳에 흩어짐)이면 원인에 그렇게 쓰고, 구조 변경은 기능 명세 변경으로 따로 제안합니다.
 
 ### Testing Strategy
 
@@ -153,11 +153,13 @@ END FUNCTION
 
 테스트 이름은 [추적 규칙](../traceability.md#버그-명세)을 따릅니다. 기능 명세 기준과 연결된 동작은 그 기준의 `R{N}-{M}` 이름을 씁니다.
 
-테스트는 기능 명세와 같은 BDD 시나리오(given / when / then, 이름 `<상황>이면 <결과>다`, 도메인 용어로 정책)로 쓰고, 고치는 코드가 있는 계층의 테스트(도메인 = 유닛, Application Service = 통합, Controller · API = E2E)로 씁니다. 응답 코드가 바뀌는 버그면 E2E 시나리오도 둡니다. Testing Strategy에 테스트마다 계층을 적습니다.
+테스트는 기능 명세와 같은 BDD 시나리오(given / when / then, 이름 `<상황>이면 <결과>다`, 도메인 용어로 정책)로 쓰고, 고치는 코드를 확인하는 테스트(종류는 convention)로 씁니다. 회원이 받는 응답이 바뀌는 버그면 그 응답을 확인하는 시나리오도 둡니다. Testing Strategy에 테스트마다 종류를 적습니다.
 
 ## 기술 정보 찾기
 
 기능 design과 같습니다. [기능 design 규칙](../feature/design-format.md#기술-정보-찾기)의 순서대로 프로젝트에서 찾고, 추측으로 정하지 않습니다. 원인 분석은 **반드시 코드를 읽고** 씁니다.
+
+convention(설정 `conventionDir`, 기본 `docs/convention`)의 **설계에 관한 것**을 가장 먼저 참고해 고치는 위치 · 방법 · 새 이름 · 테스트 종류를 정합니다. 없으면 먼저 만듭니다([convention 규칙](../convention.md)). 따른 규칙과 근거 문서는 Fix Implementation에 한 줄씩 적습니다. 예: `convention: 외부 결제사 응답 대조는 서비스에서 (docs/convention/architecture.md)`
 
 ## 검사 규칙
 

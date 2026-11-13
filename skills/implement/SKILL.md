@@ -1,8 +1,8 @@
 ---
 name: implement
-description: spec-mirror 구현. 세 단계가 모두 승인된 명세의 tasks.md 태스크를 순서대로 구현합니다. 기능 명세는 테스트를 BDD 시나리오(R{N}-{M} <상황>이면 <결과>다)로 도메인 · Service · API 계층에 맞춰 먼저 써서 실패를 확인(Red)하고 구현(Green)한 뒤 분기에 R{N}-{M} 주석을 답니다. 버그 명세는 탐색 테스트가 고치기 전에 실패하고 보존 테스트가 통과하는 것을 확인한 뒤에만 고칩니다. tasks 를 승인하면 spec · bugfix · adopt 가 이어서 이 절차로 모든 태스크를 진행합니다. "구현해줘", "모든 태스크 실행", "1~3번 진행해", "2번 태스크 시작해줘"에 사용합니다.
+description: spec-mirror 구현. 세 단계가 모두 승인된 명세의 tasks.md 태스크를 순서대로 구현합니다. 기능 명세는 테스트를 BDD 시나리오(R{N}-{M} <상황>이면 <결과>다)로 먼저 써서 실패를 확인(Red)하고 구현(Green)한 뒤 분기에 R{N}-{M} 주석을 답니다. 팀 convention(docs/convention)이 있으면 가장 먼저 읽고 따릅니다. 버그 명세는 탐색 테스트가 고치기 전에 실패하고 보존 테스트가 통과하는 것을 확인한 뒤에만 고칩니다. tasks 를 승인하면 spec · bugfix · adopt 가 이어서 이 절차로 모든 태스크를 진행합니다. "구현해줘", "모든 태스크 실행", "1~3번 진행해", "2번 태스크 시작해줘"에 사용합니다.
 argument-hint: <이름> [all | next | 번호 | 1~3 | 1,3,5]
-allowed-tools: Bash(node *spec-mirror.mjs* gate*), Bash(node *spec-mirror.mjs* next*), Bash(node *spec-mirror.mjs* status*), Bash(node *spec-mirror.mjs* check*), Bash(node *spec-mirror.mjs* trace*)
+allowed-tools: Bash(node *spec-mirror.mjs* gate*), Bash(node *spec-mirror.mjs* next*), Bash(node *spec-mirror.mjs* status*), Bash(node *spec-mirror.mjs* check*), Bash(node *spec-mirror.mjs* trace*), Bash(node *spec-mirror.mjs* convention*)
 ---
 
 # spec-mirror: implement
@@ -12,13 +12,13 @@ allowed-tools: Bash(node *spec-mirror.mjs* gate*), Bash(node *spec-mirror.mjs* n
 이 스킬을 불러올 때 표시되는 **Base directory**를 `<BASE>`라고 합니다.
 
 - 검사기: `node "<BASE>/../../scripts/spec-mirror.mjs"` (아래에서 `SM`)
-- 규칙: `<BASE>/../../rules/traceability.md`, 버그 명세면 `<BASE>/../../rules/bugfix/tasks-format.md`도 읽습니다
+- 규칙: `<BASE>/../../rules/traceability.md`, `<BASE>/../../rules/convention.md`, 버그 명세면 `<BASE>/../../rules/bugfix/tasks-format.md`도 읽습니다
 
 ## 절차
 
 1. **단계 잠금을 확인합니다.** `SM gate <이름> implement`가 실패하면 멈추고 어느 단계 승인이 필요한지 알립니다.
 
-2. **규칙을 읽습니다.** `rules/traceability.md`를 처음부터 끝까지 읽습니다. `SM next <이름> --json`의 `type`이 `bugfix`면 `rules/bugfix/tasks-format.md`도 읽습니다.
+2. **규칙을 읽습니다.** `rules/traceability.md`와 `rules/convention.md`를 처음부터 끝까지 읽습니다. `SM next <이름> --json`의 `type`이 `bugfix`면 `rules/bugfix/tasks-format.md`도 읽습니다.
 
 3. **할 태스크를 고릅니다.** 인자나 사용자 말에서 범위를 읽습니다.
 
@@ -37,34 +37,37 @@ allowed-tools: Bash(node *spec-mirror.mjs* gate*), Bash(node *spec-mirror.mjs* n
    - 범위가 애매하면("앞쪽 몇 개만") 번호를 묻습니다.
    - 시작하는 태스크는 `[-]`(진행 중)로 표시합니다.
 
-4. **프로젝트 관례를 확인합니다.**
-   - 언어, 테스트 도구, 테스트 실행 명령, 주석 문법, 가짜 구현(fake)·고정 시계 위치
-   - 찾는 곳: design(기능은 05·08, 버그는 Testing Strategy), 설정 `techContext` 문서, 기존 테스트
-   - 계층별 테스트 도구: 유닛(도메인 객체만), 통합(Service ~ 저장소), E2E(요청 ~ 저장소). design 05 `테스트 계층` 표를 따릅니다.
+4. **convention과 프로젝트 관례를 확인합니다.**
+   - **convention 문서를 가장 먼저 읽습니다.** `SM convention`으로 목록을 보고 **모든 문서를 끝까지** 읽습니다. 없으면 `rules/convention.md`의 "없을 때"대로 먼저 만듭니다(기존 코드와 design에서 구조를 읽어 초안 → 사용자 확인). 코드 스타일, 포맷, 패키지 배치, 이름, 예외 · 에러 처리, 로깅, 주석, 테스트 작성법, 커밋 규칙까지 구현 내내 따릅니다.
+   - 우선순위: spec-mirror 추적 규칙(테스트 이름 `R{N}-{M} <상황>이면 <결과>다`, given / when / then, `R{N}-{M}` 주석, 에러 메시지 원문) → convention → design → `techContext` 문서 · 기존 코드. convention이 추적 규칙과 부딪치면 그 부분만 추적 규칙을 따르고 보고에 적습니다.
+   - design이 convention과 다르면 그 태스크를 시작하지 않고 멈춰서 보고합니다. design을 고칠지는 사용자가 정합니다.
+   - 그다음 확인할 것: 언어, 테스트 도구, 테스트 실행 명령, 주석 문법, 가짜 구현(fake)·고정 시계 위치
+   - 찾는 곳: convention 문서, design(기능은 05·08, 버그는 Testing Strategy), 설정 `techContext` 문서, 기존 테스트
+   - 테스트 종류별 도구와 범위는 convention과 design 05 `테스트 종류` 표를 따릅니다.
    - 테스트 실행 명령을 찾을 수 없으면 사용자에게 묻습니다.
-   - **이름**: design 03의 `도메인 용어 ↔ 코드` 표와 design 규칙의 "이름 짓기"를 읽습니다. 클래스 · 필드 · 변수는 표의 이름을, 상태 전이는 행위 메서드 이름을 씁니다. 표에 없는 도메인 개념의 이름이 필요하면 지어내지 말고 멈춰서 보고합니다.
+   - **이름**: design 03의 `도메인 용어 ↔ 코드` 표대로 도메인 이름을 씁니다. 그 밖의 이름 스타일은 convention을 따릅니다. 표에 없는 도메인 개념의 이름이 필요하면 지어내지 말고 멈춰서 보고합니다.
 
 5. **태스크 종류별로 진행합니다.**
 
    **기능 명세**
    - **테스트 작성** (`rules/traceability.md`의 "테스트")
-     - design 05 `기준 ↔ 테스트 계층` 표대로, 기준마다 그 판단을 하는 계층에 씁니다. 도메인 = 유닛, Application Service = 통합, Controller · API = E2E. `에러 ↔ E2E 시나리오` 표의 E2E 시나리오도 씁니다.
+     - design 05 `기준 ↔ 테스트` 표대로, 기준마다 그 판단을 하는 코드를 확인하는 테스트에 씁니다. `에러 ↔ 응답 테스트` 표의 시나리오도 씁니다.
      - BDD 시나리오로 씁니다. 이름은 `R{N}-{M} <상황>이면 <결과>다`, 본문은 `// given` · `// when` · `// then` (이어지면 `// and`), when은 하나입니다.
      - 이름과 주석은 도메인 용어로 **정책**을 씁니다. 응답 코드, 에러 코드, 영문 상태 값, 호출 횟수 같은 현상은 쓰지 않습니다.
      - 결과가 다르면 시나리오를 나누고(`a`, `b`), 결과가 같은 경계값 · 조건은 파라미터 테스트의 예시로 묶습니다. `경계:`의 값은 모두 넣습니다.
-     - 현상 확인은 design 05의 테스트 지원 코드가 맡습니다. 거절은 유닛 · 통합에서 **예외**(종류 · 에러 코드 · 메시지)로, E2E에서 **응답**(응답 코드 · 에러 코드 · 메시지)으로 확인합니다. 상태 변화, 외부 호출 횟수, 로그도 계층에 맞게 확인합니다. 데이터는 design 05의 테스트 기준 데이터를 씁니다.
+     - 현상 확인은 design 05의 테스트 지원 코드가 맡습니다. 거절을 예외로 볼지 응답으로 볼지는 convention을 따르고, 메시지까지 확인합니다. 상태 변화, 외부 호출 횟수, 로그도 그 테스트가 볼 수 있는 만큼 확인합니다. 데이터는 design 05의 테스트 기준 데이터를 씁니다.
      - 실행해서 **실패를 확인합니다 (Red).** 이미 통과하면 이유를 확인해 보고합니다.
    - **구현**
      - design 02의 인터페이스대로 구현합니다.
      - 처리 흐름 기준은 분기 바로 위에 `R{N}-{M}` 주석을 **번호 순서대로** 답니다. 항상 지켜야 할 규칙은 보장 위치에 답니다.
      - 에러 메시지는 requirements와 글자까지 같게 씁니다.
-     - 검증은 design 규칙의 "검증 위치"대로 둡니다. 요청 검증 기준은 요청 DTO · 파라미터의 Bean Validation 표준 어노테이션으로 쓰고 `R{N}-{M}` 주석은 그 어노테이션 바로 위에 답니다. 비즈니스 검증은 Application Service · Aggregate · Domain Service에 둡니다.
-     - 이름은 표와 같게 씁니다. 상태 값은 Glossary의 `ENUM` 그대로이고, 상태를 바꾸는 메서드는 `cancel()`처럼 행위 이름입니다. `setStatus`, `process…`, `…Manager`처럼 뜻이 흐린 이름은 쓰지 않습니다.
+     - 검증 · 예외는 design 02 · 04에 적힌 위치와 방식(convention)대로 둡니다. `R{N}-{M}` 주석은 그 검증 바로 위에 답니다(어노테이션이면 어노테이션 바로 위).
+     - 도메인 이름은 03 표와 같게, 상태 값은 Glossary의 `ENUM` 그대로 씁니다.
      - 관련 테스트를 실행해 **통과를 확인합니다 (Green).**
 
    **버그 명세**
    - **1. 버그 조건 탐색 테스트**
-     - 테스트는 **기대 동작**을 검증합니다. 이름은 [추적 규칙](../../rules/traceability.md#버그-명세)을 따르고, 형식은 기능 명세와 같은 BDD 시나리오입니다. 고치는 코드가 있는 계층(도메인 = 유닛, Service = 통합, API = E2E)에 씁니다.
+     - 테스트는 **기대 동작**을 검증합니다. 이름은 [추적 규칙](../../rules/traceability.md#버그-명세)을 따르고, 형식은 기능 명세와 같은 BDD 시나리오입니다. 고치는 코드를 확인하는 테스트(design Testing Strategy의 종류)에 씁니다.
      - 고치기 전 코드에서 실행해 **실패해야 합니다.** 실패 내용·반례를 태스크 아래에 `  - 결과: <실패 내용>`으로 남깁니다.
      - **통과하면 멈춥니다.** 원인 분석이 틀렸거나 테스트가 버그 조건을 만들지 못한 것입니다. 사용자에게 보고하고 design을 다시 봅니다.
      - 테스트를 기대 동작과 다르게 고쳐서 실패시키거나 통과시키지 않습니다.
@@ -80,8 +83,8 @@ allowed-tools: Bash(node *spec-mirror.mjs* gate*), Bash(node *spec-mirror.mjs* n
 
    **adopt 명세** (`SM next <이름> --json`의 `mode`가 `adopt`)
    - **코드 동작을 바꾸지 않습니다.** 할 일은 테스트 이름 정리, 빠진 테스트 추가, 분기 주석뿐입니다.
-   - **기존 테스트 정리**: 이름을 `R{N}-{M} <상황>이면 <결과>다`로 바꾸고 본문을 given / when / then 주석으로 나눕니다. 검증 내용과 테스트가 있는 계층은 바꾸지 않습니다. 기준과 다르면 멈추고 보고합니다.
-   - **빠진 테스트 추가**: 지금 코드에서 판단하는 계층에 BDD 형식으로 씁니다. 새 테스트는 **지금 코드에서 바로 통과해야 합니다.** 실패하면 코드를 고치지 않고 멈춥니다. 원인이 명세면 requirements를 고치고, 코드면 Open Questions(bugfix 후보)로 보고합니다(`rules/adopt.md`의 "새 테스트가 실패하면").
+   - **기존 테스트 정리**: 이름을 `R{N}-{M} <상황>이면 <결과>다`로 바꾸고 본문을 given / when / then 주석으로 나눕니다. 검증 내용과 테스트가 있는 곳(종류)은 바꾸지 않습니다. 기준과 다르면 멈추고 보고합니다.
+   - **빠진 테스트 추가**: 지금 코드에서 판단하는 코드를 확인하는 테스트(design 05 `기준 ↔ 테스트`)에 BDD 형식으로 씁니다. 새 테스트는 **지금 코드에서 바로 통과해야 합니다.** 실패하면 코드를 고치지 않고 멈춥니다. 원인이 명세면 requirements를 고치고, 코드면 Open Questions(bugfix 후보)로 보고합니다(`rules/adopt.md`의 "새 테스트가 실패하면").
    - **코드 주석**: design 02의 `기준 ↔ 코드 분기` 표에 따라 분기 바로 위에 `R{N}-{M}`을 답니다. 주석 말고는 코드를 바꾸지 않습니다.
    - 태스크마다 전체 테스트가 그대로 통과하는지 확인합니다.
 
@@ -95,6 +98,7 @@ allowed-tools: Bash(node *spec-mirror.mjs* gate*), Bash(node *spec-mirror.mjs* n
 
 7. **보고합니다.** 고른 태스크를 모두 마치거나 멈추면 보고합니다.
    - 한 일 (태스크 번호별), 테스트 결과 (실패가 있으면 출력 그대로)
+   - convention: 읽은 문서, 추적 규칙 때문에 따르지 않은 것, 범위 밖이라 고치지 않은 기존 코드의 convention 위반 (문서가 없으면 "convention 문서 없음")
    - 멈췄으면 멈춘 태스크와 이유
    - 남은 태스크가 있으면 이어서 하는 방법: "남은 태스크를 모두 하려면 \"구현해줘\", 일부만 하려면 \"4~5번 진행해\"처럼 알려 주세요."
    - 필수 태스크가 모두 끝났으면 `/spec-mirror:sync <이름>`을 안내합니다.
@@ -107,6 +111,7 @@ allowed-tools: Bash(node *spec-mirror.mjs* gate*), Bash(node *spec-mirror.mjs* n
 - 버그 명세의 탐색 테스트가 고치기 전에 통과하거나, 보존 테스트가 실패할 때
 - adopt 명세의 새 테스트가 지금 코드에서 실패할 때
 - 테스트 실행 명령을 찾지 못하거나, 표에 없는 도메인 이름이 필요할 때
+- design이 convention과 다를 때
 - Checkpoint에서 실패나 불일치가 나올 때
 - 명세와 다를 때 (아래)
 - 버그 명세 4번(명세 반영)에서 재승인이 필요할 때

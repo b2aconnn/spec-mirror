@@ -4,29 +4,27 @@
 
 ## Architecture
 
-### 설계 규모
+### 따른 convention
 
-**규모: 작음**
-
-| 신호 | 이 기능 | 칸 |
+| 항목 | 따른 규칙 | 근거 문서 |
 |---|---|---|
-| 상태 | 찜은 담기고 빠질 뿐 상태가 없음. 판매 상태는 상품 카탈로그 값을 보여 주기만 함 (Requirements 3.4) | 작음 |
-| 항상 지켜야 할 규칙 | 같은 상품 한 번(1.9), 해제 때 카탈로그 조회 없음(2.5), 본인 것만(3.6) — 각각 한 곳에서 지킴 | 작음 |
-| 외부 시스템 | 상품 카탈로그 조회만 (1.4, 3.2) | 작음 |
-| 다른 도메인 | 상품 도메인의 정보를 읽음 (1.6) | 보통 |
-| 응답 뒤 처리 | 없음 | 작음 |
-| 동시에 겹치는 요청 | 같은 상품을 동시에 담아도 하나 (1.9) | 보통 |
+| 구조 | `api` → `application` → `domain`, 의존은 안쪽으로만 | `docs/convention/architecture.md` |
+| 규칙의 위치 | 찜은 상태가 없고 규칙마다 한 곳에서 지키므로 서비스 하나에 흐름대로 (Transaction Script) | `docs/convention/architecture.md` |
+| 이름 · 예외 | 유스케이스 메서드 `add` · `remove` · `list`, `WishlistException` + `WishlistErrorCode` | `docs/convention/coding.md` |
+| 테스트 종류 | 도메인 객체가 없어 유닛 없음. 서비스는 통합, Controller는 E2E | `docs/convention/testing.md` |
 
-- **쓰는 것**: 서비스 하나에 흐름대로(Transaction Script), JPA 엔티티 `Wish`와 Repository
+예시 문서: [convention](../../convention/)
+
+- **쓰는 것**: 서비스 하나에 흐름대로, JPA 엔티티 `Wish`와 Repository
 - **쓰지 않는 것**: Aggregate, Value Object, Domain Service, Domain Event, 새 포트. 찜은 지킬 불변식이 "같은 상품 한 번"뿐이고, 이는 유니크 제약 하나로 충분합니다.
-- **보강하는 것 (보통 칸 신호 둘)**: 상품 정보는 주문 기능이 만든 `ProductCatalog` 포트를 그대로 씁니다. 동시 담기는 `(member_id, product_id)` 유니크 제약으로 막습니다. 두 신호 때문에 규모를 올리지 않습니다.
-- 근거로 삼은 파일: `CLAUDE.md`(Spring Boot + Kotlin, JPA), `order/design/02-components.md`(`ProductCatalog`)
+- **그 부분만 보강하는 것**: 상품 정보는 주문 기능이 만든 `ProductCatalog` 포트를 그대로 씁니다. 같은 상품을 동시에 담는 경우는 `(member_id, product_id)` 유니크 제약으로 막습니다.
+- 근거로 삼은 그 밖의 파일: `CLAUDE.md`(Spring Boot + Kotlin, JPA), `order/design/02-components.md`(`ProductCatalog`)
 
-### 도메인 경계
+### 연동 관계
 
-이 기능은 **찜 도메인**입니다. 주문 · 결제와 주고받는 것은 없습니다.
+이 기능은 **찜**입니다. 주문 · 결제와 주고받는 것은 없습니다.
 
-| 상대 도메인 | 관계 | 연동 방식 |
+| 상대 | 관계 | 연동 방식 |
 |---|---|---|
 | 상품 (외부 상품 카탈로그) | 찜이 읽음 | 주문 기능의 포트 `ProductCatalog` 그대로 (새 어댑터 없음) |
 
@@ -52,7 +50,7 @@
 └──────────────────────────────────────────────┘
 ```
 
-### 아키텍처 레이어 설명
+### 구조 설명
 
 #### 1. Presentation Layer (프레젠테이션 레이어)
 - 찜하기 / 찜 해제 / 찜 목록 조회 API 노출

@@ -29,7 +29,7 @@ Run this once in your project:
 /spec-mirror:init
 ```
 
-It creates `.spec-mirror/config.json` and the spec folder `docs/spec/`.
+It creates `.spec-mirror/config.json` and the spec folder `docs/spec/`. If there is no `docs/convention/`, it recommends an architecture for your project and creates it once you pick one.
 
 ## Usage
 
@@ -75,20 +75,46 @@ Include how to reproduce the bug, what happens now, what should happen, and what
 
 Claude writes the spec from the code **without changing behavior**. For a whole project it first lists features in `docs/spec/README.md`, then adopts one feature at a time. Suspected bugs are reported, not fixed.
 
+## Following your team's conventions
+
+spec-mirror only writes specs and links them to tests and code. Architecture, naming, validation and error handling, test kinds and code style differ per project, so they come from your team's rules in `docs/convention/`.
+
+```
+docs/
+├── spec/            specs
+└── convention/      team rules
+    ├── architecture.md    structure, dependency direction, where rules live
+    ├── coding.md          naming, validation, errors, logging, code style
+    └── testing.md         test kinds and tools
+```
+
+- **If it exists**, Claude follows it as is and never edits it. Any file names, subfolders included. Somewhere else? Set `"conventionDir": "wiki/rules"` in `.spec-mirror/config.json`.
+- **If it doesn't**, Claude creates it during `init` or the first design / implementation: it looks at the project kind and size, recommends an architecture, and saves a draft once you pick one. Existing code's structure is always the first option; adopt just records the current structure.
+
+| Kind | Small | Medium | Large |
+|---|---|---|---|
+| Backend | 3 layer | 3 layer + domain model | DDD + hexagonal |
+| Frontend | page folders | feature-based | Feature-Sliced Design |
+
+- **Design** reads only the design rules and records what it followed in design 01's `따른 convention` table. **Implementation** (implement, sync) follows all of it.
+- On conflict, only three things stay spec-mirror's: test names (`R6-17 …`) with given / when / then, `// R6-17` branch comments, and error messages matching the requirements word for word.
+- If the approved design contradicts the convention during implementation, Claude stops and asks. Existing code that breaks the convention is reported, not rewritten.
+
+Example: [examples/convention/](examples/convention/) (Spring backend, 3 layer + DDD).
+
 ## How it works
 
 - **You approve every stage.** Claude never moves on by itself, and later-stage documents are locked until the earlier stage is approved.
 - **The format is checked automatically** on every save, and Claude fixes errors right away.
 - **A separate reviewer agent** reads each stage independently. Its findings, and what was done with them, are shown when Claude asks for approval.
-- **Design fits the feature's size.** Design follows DDD, but only as far as the feature needs. Stage 01 sets a design scale (small · medium · large) from the requirements, and that scale decides which tools are used (Aggregates, ports, events) and how many components there are. The checker warns and the reviewer flags over-split designs.
 - **Each step in a requirement's flow is color-coded**: 🟢 business flow (request · action · response), 🟠 validation, 🟣 external request. The legend sits right under the requirements heading, so you can read the business flow first by following 🟢, then the validations by following 🟠. The classification follows Cockburn's use-case step kinds.
 - **Existing terms come first.** Before writing requirements, the existing specs' glossaries and the code's entity and enum names are searched, and the same concept keeps the same name. If the code has `User`, the new spec says user (User), not member (Member). Terms and sentences use the business language people actually use, not developer words.
-- **Code names follow the domain terms.** Glossary English names become class and variable names, and state changes are behavior methods such as `cancel()` and `expire()`. The checker reports glossary terms missing from design's term ↔ code table and glossary state values missing from the code. Conventional suffixes such as `…Request`, `…Response`, `…Command` and `…Result` are fine.
-- **Validation lives in two places.** Checks that need only the request (required values, length, range, format) are done in the controller with standard Bean Validation annotations (`@NotBlank`, `@Size`, `@Min`, `@Pattern`, …); business checks (existence, state, limits) are done in the application service or the domain.
+- **Code names follow the domain terms.** Glossary English names become class and variable names. The checker reports glossary terms missing from design's term ↔ code table and glossary state values missing from the code. Other naming style comes from your conventions.
+- **Architecture follows your conventions.** 3 layer or DDD, design and code follow `docs/convention/`. See [Following your team's conventions](#following-your-teams-conventions).
 - **Requirements are written in natural Korean by default** (`# 요구사항`, `## 개요`, `**사용자 이야기:**` …). The English frame (`# Requirements Document`, `## Introduction`, `**User Story:** As a …`) is still accepted, so existing documents keep passing the checks.
 - **Spec and code are linked by number.** One criterion maps to test scenarios (`R1-2 …`) and one code branch (`// R1-2`). `/spec-mirror:sync` finds the gaps.
 - **Tests are BDD scenarios.** Names read as "<situation> then <outcome>" sentences in domain language (e.g. `R6-17 결제사가 주문과 같은 내용으로 승인하면 결제가 완료된다`), bodies are given / when / then. Tests state the policy, not observed details like status codes; those checks live in test support code. Boundary values with the same outcome are examples of one scenario.
-- **Tests live where the decision is made.** Domain → unit, Application Service → integration, Controller → E2E. Unit and integration tests check rejections as exceptions; E2E checks the response code for every error. design 05 maps each criterion to its layer.
+- **No criterion goes untested.** design 05 maps every criterion to the test that checks it, and every error has at least one scenario checking the response the user actually gets. Test kinds (unit, integration, E2E …) come from your conventions.
 
 ## Commands
 

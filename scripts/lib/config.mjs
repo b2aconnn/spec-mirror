@@ -13,6 +13,7 @@ export const DEFAULT_CONFIG = {
   specRoot: 'docs/spec',
   stageGate: true,
   techContext: ['CLAUDE.md', 'README.md'],
+  conventionDir: 'docs/convention',
   extraItemLabels: [],
   testPathPatterns: [
     '(^|/)(test|tests|__tests__|spec|specs)/',

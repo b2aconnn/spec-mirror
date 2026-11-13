@@ -6,13 +6,13 @@
 
 ### 테스트 전략 개요
 
-기준은 그 판단을 하는 계층의 테스트가 맡습니다. 도메인은 유닛, Application Service는 통합, Controller는 E2E로 테스트합니다. 모든 테스트는 BDD 시나리오(given / when / then)이고, 이름은 `R{N}-{M} <상황>이면 <결과>다`, 이름과 시나리오는 도메인 용어로 정책을 씁니다.
+기준은 그 판단을 하는 코드를 확인하는 테스트가 맡습니다. 테스트 종류는 convention(`docs/convention/testing.md`)대로 도메인은 유닛, Application Service는 통합, Controller는 E2E입니다. 모든 테스트는 BDD 시나리오(given / when / then)이고, 이름은 `R{N}-{M} <상황>이면 <결과>다`, 이름과 시나리오는 도메인 용어로 정책을 씁니다.
 
 이 기능은 기존 결제 구조를 따라 상태 전이를 Repository 조건부 UPDATE로 하므로([Aggregates](03-data-models.md)), 상태에 따른 판단 대부분을 통합 테스트가 맡습니다. 유닛 테스트는 금액 계산 · 주문 초안 · 주문 내용 지문처럼 저장소 없이 판단하는 Value Object와 Factory가 맡습니다.
 
-#### 1. 테스트 계층
+#### 1. 테스트 종류
 
-| 계층 | 대상 | 실제로 도는 것 | 바꾸는 것 | 테스트 묶음 |
+| 종류 | 대상 | 실제로 도는 것 | 바꾸는 것 | 테스트 묶음 |
 |---|---|---|---|---|
 | 유닛 | `OrderLines`, `OrderDraft`, `OrderFingerprint` | 도메인 객체만 | 없음 (시각은 인자) | `OrderLinesTest`, `OrderDraftTest`, `OrderFingerprintTest` |
 | 통합 | Order Place · Idempotency · Query · Cancel Service, Payment Confirm Service, Order Payment Synchronizer, Order Expirer | Service ~ H2 (MySQL 모드) | `FakePgClient`, `FakeProductCatalog`, 고정 `Clock` | `OrderPlaceIntegrationTest`, `OrderIdempotencyIntegrationTest`, `OrderQueryIntegrationTest`, `OrderCancelIntegrationTest`, `PaymentConfirmIntegrationTest`, `OrderPaymentResultIntegrationTest`, `OrderExpirationIntegrationTest`, `OrderPaymentConsistencyIntegrationTest` |
@@ -20,9 +20,9 @@
 
 **도구:** JUnit 5 + AssertJ, 통합은 `@SpringBootTest`, E2E는 `@SpringBootTest` + `MockMvc`. 결과가 같은 경계값 · 조건은 `@ParameterizedTest`로 묶습니다.
 
-#### 2. 기준 ↔ 테스트 계층
+#### 2. 기준 ↔ 테스트
 
-| 기준 | 판단 위치 | 테스트 계층 | 테스트 묶음 |
+| 기준 | 판단 위치 | 테스트 종류 | 테스트 묶음 |
 |---|---|---|---|
 | 1.1, 1.14, 1.15 | Order Controller `place`, `PlaceOrderRequest` | E2E | `OrderE2ETest` |
 | 1.2 ~ 1.4 | `PlaceOrderRequest` 어노테이션 | E2E | `OrderE2ETest` |
@@ -47,11 +47,11 @@
 | 8.1 ~ 8.7 | Order Expiration Scheduler, Order Expirer | 통합 | `OrderExpirationIntegrationTest` |
 | 9.1 ~ 9.5 | Order Payment Synchronizer, 조건부 UPDATE | 통합 | `OrderPaymentConsistencyIntegrationTest` |
 
-#### 3. 에러 ↔ E2E 시나리오
+#### 3. 에러 ↔ 응답 테스트
 
-유닛 · 통합은 거절을 예외(종류 · 에러 코드 · 메시지)로 확인하고, 응답 코드는 아래 E2E 시나리오가 확인합니다.
+convention대로 유닛 · 통합은 거절을 예외(종류 · 에러 코드 · 메시지)로 확인하고, 회원이 받는 응답은 아래 E2E 시나리오가 확인합니다.
 
-| 에러 코드 | 응답 | E2E 시나리오 |
+| 에러 코드 | 응답 | 시나리오 |
 |---|---|---|
 | `INVALID_ORDER_ITEM_COUNT` | `400` | `R1-2b 주문 상품이 없거나 20개를 넘으면 주문할 수 없다` |
 | `INVALID_ORDER_QUANTITY` | `400` | `R1-3b 상품별 수량이 1개보다 적거나 99개를 넘으면 주문할 수 없다` |

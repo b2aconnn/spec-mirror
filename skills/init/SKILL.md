@@ -1,7 +1,7 @@
 ---
 name: init
 description: spec-mirror 프로젝트 설정. .spec-mirror/config.json 과 명세 폴더(기본 docs/spec)를 만들고, 기술 맥락 문서 · 테스트 경로 규칙 · 항목 이름을 프로젝트에 맞게 정한 뒤, CLAUDE.md 에 spec-mirror 작업 흐름 안내를 추가합니다. 프로젝트에서 spec-mirror 를 처음 쓸 때 사용합니다.
-allowed-tools: Bash(node *spec-mirror.mjs* init*), Bash(node *spec-mirror.mjs* check*), Bash(node *spec-mirror.mjs* status*)
+allowed-tools: Bash(node *spec-mirror.mjs* init*), Bash(node *spec-mirror.mjs* check*), Bash(node *spec-mirror.mjs* status*), Bash(node *spec-mirror.mjs* convention*)
 ---
 
 # spec-mirror: init
@@ -24,11 +24,16 @@ allowed-tools: Bash(node *spec-mirror.mjs* init*), Bash(node *spec-mirror.mjs* c
    |---|---|
    | `specRoot` | 이미 명세 폴더가 있으면 그 위치 (기본 `docs/spec`) |
    | `techContext` | 기술 스택·관례가 적힌 문서 (`CLAUDE.md`, `README.md`, `docs/architecture.md` 등) |
+   | `conventionDir` | 팀 convention 문서 폴더 (기본 `docs/convention`). 다른 곳(예: `docs/rules`, `wiki/convention`)에 이미 있으면 그 경로를 제안합니다 |
    | `testPathPatterns` | 테스트 파일을 구분하는 경로 정규식. 기존 테스트 위치를 보고 맞는지 확인 |
    | `extraItemLabels` | Glossary에 없지만 세부 항목 이름으로 쓸 외부 시스템 이름 |
    | `stageGate` | 단계 잠금 훅 (기본 켜짐. 끄는 것은 권장하지 않음) |
 
-4. **CLAUDE.md에 안내를 추가합니다.**
+4. **convention을 확인합니다.** `SM convention`으로 문서가 있는지 봅니다.
+   - 있으면 고치지 않고, 문서 목록만 보고합니다.
+   - 없으면 `<BASE>/../../rules/convention.md`의 "없을 때"를 따릅니다. 프로젝트 종류(백엔드 · 프론트엔드 …)와 규모를 보고 아키텍처를 추천하고, 사용자가 고르면 `<BASE>/../../templates/convention/`의 틀로 초안을 만들어 확인받은 뒤 저장합니다. 사용자가 나중에 하겠다고 하면 건너뜁니다(첫 design · implement 때 다시 묻습니다).
+
+5. **CLAUDE.md에 안내를 추가합니다.**
    - 아래 블록을 보여 주고, 사용자가 동의하면 CLAUDE.md 끝에 추가합니다. CLAUDE.md가 없으면 만듭니다.
    - 이미 같은 블록이 있으면 건너뜁니다.
    - 규칙 본문은 복사하지 않습니다. 규칙의 원본은 플러그인 하나입니다.
@@ -43,14 +48,16 @@ allowed-tools: Bash(node *spec-mirror.mjs* init*), Bash(node *spec-mirror.mjs* c
    - 단계마다 사용자 승인을 받는다. 승인 전에는 다음 단계를 쓰지 않는다.
    - 기준 하나 = 코드 분기 하나 = 테스트 시나리오 하나 이상. 분기 주석은 `R{N}-{M}`.
    - 테스트는 BDD 시나리오(given / when / then)로, 이름은 `R{N}-{M} <상황>이면 <결과>다`. 도메인 용어로 정책을 쓰고 응답 코드 · 상태 값 같은 현상은 쓰지 않는다.
-   - 도메인은 유닛, Application Service는 통합, Controller · API는 E2E 테스트. 유닛 · 통합은 예외로, 응답 코드는 E2E에서 확인한다.
    - 버그는 탐색 테스트가 고치기 전에 실패하는 것을 확인한 뒤에 고치고, 고친 동작을 기능 명세에 반영한다.
    - 문서와 코드가 다르면 문서가 맞다. "명세 동기화해줘" 는 `/spec-mirror:sync <이름>` 이다.
+   - 아키텍처 · 이름 · 검증 · 예외 · 테스트 종류 · 코드 스타일은 `docs/convention/`을 가장 먼저 따른다. design은 그중 설계에 관한 규칙을, 구현은 전부를 따른다. 단 테스트 이름 · `R{N}-{M}` 주석 · 에러 메시지 원문은 spec-mirror 규칙을 따른다.
    ```
 
-5. **기존 명세를 확인합니다.** `docs/spec/` 아래에 이미 명세가 있으면 `SM check`를 실행해 결과를 보고합니다. 오류가 있으면 어느 명령으로 고칠지 안내합니다.
+   `conventionDir`을 바꿨으면 블록의 `docs/convention/`도 그 경로로 씁니다.
 
-6. **다음 할 일을 안내합니다.**
+6. **기존 명세를 확인합니다.** `docs/spec/` 아래에 이미 명세가 있으면 `SM check`를 실행해 결과를 보고합니다. 오류가 있으면 어느 명령으로 고칠지 안내합니다.
+
+7. **다음 할 일을 안내합니다.**
    - 기존 코드를 명세로 옮기기: `/spec-mirror:adopt` (프로젝트 전체 지도부터) 또는 `/spec-mirror:adopt <기능>`
    - 새 기능: `/spec-mirror:spec <이름> <만들 것>`
    - 버그: `/spec-mirror:bugfix <버그 이름> <버그 설명>`

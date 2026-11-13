@@ -4,32 +4,33 @@
 
 ## Architecture
 
-### 설계 규모
+### 따른 convention
 
-**규모: 큼**
-
-| 신호 | 이 기능 | 칸 |
+| 항목 | 따른 규칙 | 근거 문서 |
 |---|---|---|
-| 상태 | 주문 5개 상태와 결제 5개 상태가 짝을 이루며 함께 바뀜 (Requirements 9.1, 9.2) | 큼 |
-| 항상 지켜야 할 규칙 | 주문 금액 고정(1.15, 1.17), 승인 요청 한 번(6.25), 상태 짝(9.1 ~ 9.3) — 주문과 결제에 걸침 | 큼 |
-| 외부 시스템 | 상품 카탈로그 조회, PG 승인 — 결과 불명과 대사가 있음 (6.24) | 큼 |
-| 다른 도메인 | 상품 도메인의 정보를 읽음 (1.5) | 보통 |
-| 응답 뒤 처리 | 결제 기한 만료 배치 (Requirement 8), 대사 결과 반영 (7.7) | 큼 |
-| 동시에 겹치는 요청 | 승인 · 취소 · 만료가 겹쳐도 하나만 반영 (9.3), 같은 키 동시 요청 (2.8) | 큼 |
+| 구조 | `api` → `application` → `domain` ← `adapter` · `persistence`, 의존은 안쪽으로만 | `docs/convention/architecture.md` |
+| 규칙의 위치 | 주문 · 결제는 상태 전이와 불변식이 있어 Aggregate Root 메서드가 지킴. Application Service는 순서만 조율 | `docs/convention/architecture.md` |
+| 컴포넌트 나누기 | 분리 조건 1 ~ 5에 해당할 때만 따로 둠 (02의 `**역할:**`에 번호) | `docs/convention/architecture.md` |
+| 외부 연동 · 트랜잭션 | 상품 카탈로그는 포트 + 어댑터로 번역. 외부 호출은 트랜잭션 밖, 상태 변경은 조건부 UPDATE | `docs/convention/architecture.md` |
+| 이름 · 예외 | 행위 메서드(`cancel()`, `expire()`), `…Request` → `…Command` → `…Result` → `…Response`, `OrderException` + `OrderErrorCode` | `docs/convention/coding.md` |
+| 요청 검증 | 요청 DTO · 파라미터 · 헤더의 Bean Validation 표준 어노테이션, `message`에 에러 코드, 여러 위반이면 기준 순서상 앞선 하나 | `docs/convention/validation.md` |
+| 테스트 종류 | 도메인은 유닛, Application Service는 통합, Controller는 E2E | `docs/convention/testing.md` |
 
-- **쓰는 것**: Aggregate 2개(주문, 결제), 금액 계산의 Value Object, 요청 검증은 Controller의 Bean Validation 어노테이션, 상품 카탈로그 포트 + 어댑터(외부 응답을 `CatalogProduct`로 번역)
+예시 문서: [convention](../../convention/)
+
+- **쓰는 것**: Aggregate 2개(주문, 결제), 금액 계산의 Value Object, 상품 카탈로그 포트 + 어댑터(외부 응답을 `CatalogProduct`로 번역)
 - **쓰지 않는 것**: Domain Event. 주문 상태는 결제 상태와 한 트랜잭션에서 함께 바뀌어야 하므로(9.2) 이벤트로 나누지 않고, Order Payment Synchronizer가 결제 트랜잭션 안에서 반영합니다.
 - **기존 구조를 따르는 것**: 상태 변경은 기존 `Payment`와 같이 Repository 조건부 UPDATE로 합니다(9.3). 어떤 전이가 가능한지는 `OrderStatus`가 정합니다.
 
-### 도메인 경계
+### 연동 관계
 
-이 기능은 **주문 도메인**입니다. 결제 도메인(기존)과 같은 서비스 안에 있습니다.
+이 기능은 **주문**입니다. 결제(기존)와 같은 서비스 안에 있습니다.
 
-| 상대 도메인 | 관계 | 연동 방식 |
+| 상대 | 관계 | 연동 방식 |
 |---|---|---|
 | 결제 | 주문이 결제를 만들고, 결제 상태 변화에 주문이 반응함 | 같은 트랜잭션에서 Order Payment Synchronizer 호출 (9.2) |
 | 상품 (외부 상품 카탈로그) | 주문이 읽음 | 포트 `ProductCatalog` + 어댑터 `HttpProductCatalog`. 외부 응답을 `CatalogProduct`로 번역 |
-| PG | 결제 도메인이 요청함. 이 기능에서 바꾸지 않음 | 기존 `PgClient` 그대로 |
+| PG | 결제가 요청함. 이 기능에서 바꾸지 않음 | 기존 `PgClient` 그대로 |
 
 ### 시스템 아키텍처
 
@@ -82,7 +83,7 @@
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 아키텍처 레이어 설명
+### 구조 설명
 
 #### 1. Presentation Layer (프레젠테이션 레이어)
 - 주문 접수 / 조회 / 내역 / 취소, 결제 승인 API 노출

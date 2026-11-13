@@ -6,11 +6,11 @@
 
 ### 테스트 전략 개요
 
-기준은 그 판단을 하는 계층의 테스트가 맡습니다. 이 기능은 설계 규모가 작음이라 도메인 객체 없이 서비스 하나(Transaction Script)가 판단하므로 **유닛 테스트는 없고**, 서비스는 통합, Controller는 E2E로 테스트합니다. 모든 테스트는 BDD 시나리오(given / when / then)이고, 이름은 `R{N}-{M} <상황>이면 <결과>다`, 이름과 시나리오는 도메인 용어로 정책을 씁니다.
+기준은 그 판단을 하는 코드를 확인하는 테스트가 맡습니다. 테스트 종류는 convention(`docs/convention/testing.md`)을 따릅니다. 이 기능은 도메인 객체 없이 서비스 하나(Transaction Script)가 판단하므로 **유닛 테스트는 없고**, 서비스는 통합, Controller는 E2E로 테스트합니다. 모든 테스트는 BDD 시나리오(given / when / then)이고, 이름은 `R{N}-{M} <상황>이면 <결과>다`, 이름과 시나리오는 도메인 용어로 정책을 씁니다.
 
-#### 1. 테스트 계층
+#### 1. 테스트 종류
 
-| 계층 | 대상 | 실제로 도는 것 | 바꾸는 것 | 테스트 묶음 |
+| 종류 | 대상 | 실제로 도는 것 | 바꾸는 것 | 테스트 묶음 |
 |---|---|---|---|---|
 | 유닛 | 해당 없음 — 판단이 모두 Wishlist Service에 있음 | — | — | — |
 | 통합 | Wishlist Service | Service ~ H2 (MySQL 모드) | `FakeProductCatalog`, 고정 `Clock` | `WishlistServiceIntegrationTest` |
@@ -18,9 +18,9 @@
 
 **도구:** JUnit 5 + AssertJ, `@SpringBootTest`(통합), `@SpringBootTest` + `MockMvc`(E2E). 주문 기능의 `FakeProductCatalog`(장애 스위치, 호출 횟수 카운터)와 고정 `Clock`을 그대로 씁니다.
 
-#### 2. 기준 ↔ 테스트 계층
+#### 2. 기준 ↔ 테스트
 
-| 기준 | 판단 위치 | 테스트 계층 | 테스트 묶음 |
+| 기준 | 판단 위치 | 테스트 종류 | 테스트 묶음 |
 |---|---|---|---|
 | 1.1, 1.8 | Wishlist Controller 찜하기 | E2E | `WishlistE2ETest` |
 | 1.2 ~ 1.7 | Wishlist Service `add` | 통합 | `WishlistServiceIntegrationTest` |
@@ -30,9 +30,9 @@
 | 3.1 | Wishlist Controller 찜 목록 | E2E | `WishlistE2ETest` |
 | 3.2 ~ 3.6 | Wishlist Service `list` | 통합 | `WishlistServiceIntegrationTest` |
 
-#### 3. 에러 ↔ E2E 시나리오
+#### 3. 에러 ↔ 응답 테스트
 
-| 에러 코드 | 응답 | E2E 시나리오 |
+| 에러 코드 | 응답 | 시나리오 |
 |---|---|---|
 | `WISHLIST_FULL` | `409` | `R1-3b 찜 목록이 가득 찬 회원이 상품을 담으면 100개까지 담을 수 있다고 안내받는다` |
 | `PRODUCT_CATALOG_UNAVAILABLE` | `503` | `R1-5 상품 정보를 확인할 수 없으면 잠시 후 다시 담으라고 안내받는다` |

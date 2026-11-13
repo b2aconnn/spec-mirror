@@ -192,8 +192,8 @@ export function createCli({ pluginRoot, version }) {
     const file = configFile(root)
     if (fs.existsSync(file)) { console.log(`이미 설정되어 있습니다: ${rel(root, file)}`); return 0 }
     fs.mkdirSync(path.dirname(file), { recursive: true })
-    const { specRoot, techContext, extraItemLabels, testPathPatterns } = DEFAULT_CONFIG
-    fs.writeFileSync(file, JSON.stringify({ specRoot, techContext, extraItemLabels, testPathPatterns }, null, 2) + '\n')
+    const { specRoot, techContext, conventionDir, extraItemLabels, testPathPatterns } = DEFAULT_CONFIG
+    fs.writeFileSync(file, JSON.stringify({ specRoot, techContext, conventionDir, extraItemLabels, testPathPatterns }, null, 2) + '\n')
     fs.mkdirSync(path.join(root, specRoot), { recursive: true })
     console.log(`만든 파일: ${rel(root, file)}\n명세 위치: ${specRoot}/`)
     return 0
@@ -204,6 +204,27 @@ export function createCli({ pluginRoot, version }) {
     const rows = listSpecs(root, config).map((name) => ({ name, type: specType(specDir(root, config, name)) }))
     if (json(args)) out(rows)
     else rows.forEach((r) => console.log(`${r.name}\t${SPEC_TYPES[r.type]?.label || r.type}`))
+    return 0
+  }
+
+  /** 설정 conventionDir(기본 docs/convention) 안의 문서 목록. 하위 폴더까지, 숨김 파일 제외 */
+  function cmdConvention(args) {
+    const { root, config } = ctx()
+    const dir = config.conventionDir || DEFAULT_CONFIG.conventionDir
+    const abs = path.resolve(root, dir)
+    const files = []
+    const walk = (d) => {
+      for (const e of fs.readdirSync(d, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+        if (e.name.startsWith('.')) continue
+        const p = path.join(d, e.name)
+        if (e.isDirectory()) walk(p)
+        else if (e.isFile()) files.push(rel(root, p))
+      }
+    }
+    if (fs.existsSync(abs) && fs.statSync(abs).isDirectory()) walk(abs)
+    if (json(args)) out({ dir, files })
+    else if (files.length === 0) console.log(`convention 문서 없음 (${dir})`)
+    else console.log(`convention 문서 ${files.length}개 (${dir})\n${files.join('\n')}`)
     return 0
   }
 
@@ -220,6 +241,7 @@ export function createCli({ pluginRoot, version }) {
   scaffold map                           명세 지도(<specRoot>/README.md) 템플릿 생성
   map      [--json]                      명세 지도 검사와 기능별 진행 상황
   list     [--json]                      명세 목록
+  convention [--json]                    프로젝트 convention 문서 목록 (설정 conventionDir, 기본 docs/convention)
   init                                   .spec-mirror/config.json 생성
   hook     <pre|post|session>            Claude Code 훅 진입점
 
@@ -239,6 +261,7 @@ export function createCli({ pluginRoot, version }) {
       case 'scaffold': return cmdScaffold(args)
       case 'list': return cmdList(args)
       case 'map': return cmdMap(args)
+      case 'convention': return cmdConvention(args)
       case 'init': return cmdInit()
       case 'hook':
         if (args[0] === 'pre') return preHook()

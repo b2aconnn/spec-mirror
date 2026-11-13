@@ -2,7 +2,7 @@
 name: bugfix
 description: spec-mirror 버그 명세. 버그를 bugfix(현재 동작 / 기대 동작 / 유지할 동작) → design(원인 · 고치는 범위 · Property) → tasks(탐색 테스트 실패 확인 → 보존 테스트 → 수정 → 명세 반영) 세 단계로, 단계마다 사용자 승인을 받으며 진행합니다. 처음 부르면 bugfix.md 를 쓰고, 다시 부르면 지금 단계에 맞춰 이어서 합니다. 버그 리포트, 장애, "이거 왜 이렇게 동작해", "버그 고쳐줘", 회귀가 걱정되는 수정에 사용합니다.
 argument-hint: <버그 이름> [bugfix|design|tasks] [버그 설명]
-allowed-tools: Bash(node *spec-mirror.mjs* trace*), Bash(node *spec-mirror.mjs* next*), Bash(node *spec-mirror.mjs* gate*), Bash(node *spec-mirror.mjs* status*), Bash(node *spec-mirror.mjs* check*), Bash(node *spec-mirror.mjs* scaffold*), Bash(node *spec-mirror.mjs* init*), Bash(node *spec-mirror.mjs* list*)
+allowed-tools: Bash(node *spec-mirror.mjs* trace*), Bash(node *spec-mirror.mjs* next*), Bash(node *spec-mirror.mjs* gate*), Bash(node *spec-mirror.mjs* status*), Bash(node *spec-mirror.mjs* check*), Bash(node *spec-mirror.mjs* scaffold*), Bash(node *spec-mirror.mjs* init*), Bash(node *spec-mirror.mjs* list*), Bash(node *spec-mirror.mjs* convention*)
 ---
 
 # spec-mirror: bugfix (버그 명세)

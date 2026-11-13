@@ -5,7 +5,7 @@ import path from 'node:path'
 import { readText, maskFences, h2List, rel, normalizeTitle, words } from './util.mjs'
 import { expandRefs, refExists } from './refs.mjs'
 
-const LAYER_TABLE = /^#{3,4} (\d+\.\s*)?기준 ↔ 테스트 계층\s*$/
+const LAYER_TABLE = /^#{3,4} (\d+\.\s*)?기준 ↔ 테스트( 계층)?\s*$/
 
 export const DESIGN_FILES = [
   { file: '01-architecture.md', title: '아키텍처', sections: ['Architecture'] },
@@ -17,9 +17,6 @@ export const DESIGN_FILES = [
   { file: '07-correctness-properties.md', title: '정확성 속성', sections: ['Property-Based Testing Analysis', 'Correctness Properties'] },
   { file: '08-deployment-configuration.md', title: '배포 · 설정', sections: ['Deployment', 'Configuration'] },
 ]
-export const SCALES = ['작음', '보통', '큼']
-/** 규모별 컴포넌트 수 상한 (넘으면 DES013 경고). 큼은 상한 없음 */
-export const COMPONENT_LIMIT = { 작음: 3, 보통: 7 }
 export const PROPERTY_PREAMBLE = /^\*A property is a characteristic or behavior that should hold true across all valid executions of a system/
 
 /** "## Correctness Properties" 아래의 Property 목록. 기능 design 과 bugfix design 이 함께 쓴다. */
@@ -106,34 +103,6 @@ function subsection(lines, heading) {
   return { line: start + 1, body: out }
 }
 
-/** 01 의 설계 규모와 03 의 Aggregates 를 읽는다 */
-export function parseDomainDesign(design) {
-  const arch = design.files[0]
-  const data = design.files[2]
-  const out = { scale: null, scaleLine: null, aggregates: null }
-  if (arch.exists) {
-    const sec = subsection(arch.lines, /^### 설계 규모\s*$/)
-    if (sec) {
-      out.scaleLine = sec.line
-      for (const { line, ln } of sec.body) {
-        const m = line.match(/^\*\*규모:\s*(.+?)\s*\*\*\s*$/)
-        if (m) { out.scale = m[1]; out.scaleLine = ln; break }
-      }
-    }
-  }
-  if (data.exists) {
-    const sec = subsection(data.lines, /^### Aggregates\s*$/)
-    if (sec) {
-      const rows = sec.body.filter(({ line }) => /^\|/.test(line) && !/^\|\s*-/.test(line)).slice(1)
-      out.aggregates = {
-        line: sec.line,
-        rows: rows.map(({ line, ln }) => ({ ln, cells: line.split('|').slice(1, -1).map((c) => c.trim()) })),
-      }
-    }
-  }
-  return out
-}
-
 /** Prework 제목은 기준의 굵은 문장이거나, 그 문장의 단어만으로 줄인 것이어야 한다. */
 function titleMatches(rule, title) {
   if (normalizeTitle(rule) === normalizeTitle(title)) return true
@@ -192,11 +161,8 @@ export function checkDesign(dir, req, root, report, { draft = false } = {}) {
 
   // DES006 필수 하위 섹션
   const need = [
-    ['01-architecture.md', /^### 설계 규모\s*$/, '"### 설계 규모"'],
-    ['01-architecture.md', /^### 도메인 경계\s*$/, '"### 도메인 경계"'],
-    ['03-data-models.md', /^### Aggregates\s*$/, '"### Aggregates"'],
     ['03-data-models.md', /^### 도메인 용어 ↔ 코드\s*$/, '"### 도메인 용어 ↔ 코드"'],
-    ['05-testing.md', LAYER_TABLE, '"기준 ↔ 테스트 계층"'],
+    ['05-testing.md', LAYER_TABLE, '"기준 ↔ 테스트"'],
     ['05-testing.md', /^#{3,4} (\d+\.\s*)?테스트 기준 데이터\s*$/, '"테스트 기준 데이터"'],
     ['07-correctness-properties.md', /^### PBT Applicability Assessment\s*$/, '"### PBT Applicability Assessment"'],
     ['07-correctness-properties.md', /^### Acceptance Criteria Testing Prework\s*$/, '"### Acceptance Criteria Testing Prework"'],
@@ -208,33 +174,9 @@ export function checkDesign(dir, req, root, report, { draft = false } = {}) {
     if (spec.exists && !spec.lines.some((l) => re.test(l))) report.error('DES006', rel(root, spec.path), 1, `${label} 이(가) 없습니다.`)
   }
 
-  // DES012 ~ DES015 설계 규모와 Aggregates
-  const domain = parseDomainDesign(design)
-  design.scale = SCALES.includes(domain.scale) ? domain.scale : null
-  const fa = rel(root, design.files[0].path)
-  const fd = rel(root, design.files[2].path)
-  if (domain.scaleLine && !design.scale) {
-    report.error('DES012', fa, domain.scaleLine, `"### 설계 규모" 에 "**규모: 작음 | 보통 | 큼**" 중 하나를 씁니다. (실제: ${domain.scale ?? '없음'})`)
-  }
-  const limit = COMPONENT_LIMIT[design.scale]
-  if (limit && design.components.length > limit) {
-    report.warn('DES013', rel(root, design.files[1].path), design.components[limit].line, `설계 규모 ${design.scale} 의 컴포넌트는 ${limit}개까지입니다. (실제 ${design.components.length}개) 분리 조건에 맞지 않는 컴포넌트를 합치거나, 규모 판단을 다시 보세요.`)
-  }
-  const agg = domain.aggregates
-  if (agg && design.scale) {
-    if (design.scale !== '작음' && agg.rows.length === 0) report.warn('DES014', fd, agg.line, `설계 규모 ${design.scale} 인데 Aggregate 가 없습니다. 상태 전이와 불변식을 지키는 Aggregate 를 정하세요.`)
-    if (design.scale === '작음' && agg.rows.length > 0) report.warn('DES014', fd, agg.line, '설계 규모 작음인데 Aggregate 표가 있습니다. 규모를 다시 보거나 "해당 없음 — <이유>" 로 씁니다.')
-  }
-  if (agg && req) {
-    for (const row of agg.rows) {
-      for (const [n, m, raw] of expandRefs(row.cells.at(-1) || '')) {
-        if (!refExists(req, n, m)) report.error('DES015', fd, row.ln, `Aggregate "${row.cells[0]}": 참조 ${n}.${m} 이(가) requirements 에 없습니다. (${raw})`)
-      }
-    }
-  }
-
   // DES016 Glossary 용어가 도메인 용어 ↔ 코드 표에 있어야 한다
   const data = design.files[2]
+  const fd = rel(root, data.path)
   if (req?.terms?.length && data.exists) {
     const sec = subsection(data.lines, /^### 도메인 용어 ↔ 코드\s*$/)
     if (sec) {
@@ -245,7 +187,7 @@ export function checkDesign(dir, req, root, report, { draft = false } = {}) {
     }
   }
 
-  // DES017 기준 ↔ 테스트 계층 표가 모든 기준을 덮고, 없는 기준을 참조하지 않는다
+  // DES017 기준 ↔ 테스트 표가 모든 기준을 덮고, 없는 기준을 참조하지 않는다
   const testing = design.files[4]
   if (req && testing.exists) {
     const start = testing.lines.findIndex((l) => LAYER_TABLE.test(l))
@@ -257,12 +199,12 @@ export function checkDesign(dir, req, root, report, { draft = false } = {}) {
         if (!/^\|/.test(line) || /^\|\s*:?-/.test(line)) continue
         const first = line.split('|')[1] || ''
         for (const [n, m, raw] of expandRefs(first)) {
-          if (!refExists(req, n, m)) report.error('DES017', ft, i + 1, `기준 ↔ 테스트 계층: 참조 ${n}.${m} 이(가) requirements 에 없습니다. (${raw})`)
+          if (!refExists(req, n, m)) report.error('DES017', ft, i + 1, `기준 ↔ 테스트: 참조 ${n}.${m} 이(가) requirements 에 없습니다. (${raw})`)
           else covered.add(`${n}.${m}`)
         }
       }
       const missing = req.requirements.flatMap((r) => r.criteria.map((c) => `${r.number}.${c.number}`)).filter((id) => !covered.has(id))
-      if (missing.length) report.warn('DES017', ft, start + 1, `기준 ↔ 테스트 계층 표에 없는 기준: ${missing.join(', ')}. 어느 계층의 테스트가 맡는지 적으세요.`)
+      if (missing.length) report.warn('DES017', ft, start + 1, `기준 ↔ 테스트 표에 없는 기준: ${missing.join(', ')}. 어느 테스트가 맡는지 적으세요.`)
     }
   }
 

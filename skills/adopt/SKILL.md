@@ -2,7 +2,7 @@
 name: adopt
 description: spec-mirror 기존 코드에서 명세 만들기. 이미 동작하는 코드를 동작을 바꾸지 않고 기능 명세(requirements → design → tasks)로 옮깁니다. 기능을 주면 그 기능을, 주지 않으면 프로젝트 전체의 명세 지도(docs/spec/README.md)부터 만들고 기능 하나씩 진행합니다. 코드의 분기를 빠짐없이 기준으로 옮기고, tasks 는 테스트 이름 정리 · 빠진 테스트 추가 · 분기 주석 같은 도입 작업입니다. "기존 코드 분석해서 명세 만들어줘", "이 프로젝트 문서화해줘", "레거시를 명세로 옮겨줘"에 사용합니다.
 argument-hint: "[기능] [requirements|design|tasks] [코드 경로나 설명]"
-allowed-tools: Bash(node *spec-mirror.mjs* next*), Bash(node *spec-mirror.mjs* gate*), Bash(node *spec-mirror.mjs* status*), Bash(node *spec-mirror.mjs* check*), Bash(node *spec-mirror.mjs* scaffold*), Bash(node *spec-mirror.mjs* init*), Bash(node *spec-mirror.mjs* list*), Bash(node *spec-mirror.mjs* map*), Bash(node *spec-mirror.mjs* trace*)
+allowed-tools: Bash(node *spec-mirror.mjs* next*), Bash(node *spec-mirror.mjs* gate*), Bash(node *spec-mirror.mjs* status*), Bash(node *spec-mirror.mjs* check*), Bash(node *spec-mirror.mjs* scaffold*), Bash(node *spec-mirror.mjs* init*), Bash(node *spec-mirror.mjs* list*), Bash(node *spec-mirror.mjs* map*), Bash(node *spec-mirror.mjs* trace*), Bash(node *spec-mirror.mjs* convention*)
 ---
 
 # spec-mirror: adopt (기존 코드에서 명세 만들기)

@@ -29,7 +29,7 @@ Claude Code와 Node.js 18 이상이 필요합니다.
 /spec-mirror:init
 ```
 
-`.spec-mirror/config.json`과 명세 폴더 `docs/spec/`이 생깁니다.
+`.spec-mirror/config.json`과 명세 폴더 `docs/spec/`이 생깁니다. 팀 규칙 폴더 `docs/convention/`이 없으면 프로젝트에 맞는 아키텍처를 추천하고, 고르면 만들어 줍니다([팀 convention 따르기](#팀-convention-따르기)).
 
 ## 사용법
 
@@ -98,25 +98,21 @@ Claude Code와 Node.js 18 이상이 필요합니다.
 <details>
 <summary><b>예시: design</b> — 요구사항을 코드 구조에 연결</summary>
 
-목차 `design.md`와 본문 8개 파일로 나뉩니다. DDD로 설계하되, **기능 규모에 맞는 만큼만** 씁니다.
-
-- 01에서 requirements의 상태, 항상 지켜야 할 규칙, 외부 시스템, 다른 도메인, 동시성을 보고 **설계 규모**(작음 · 보통 · 큼)를 정합니다.
-- 작음은 서비스 하나에 흐름대로 두고 Aggregate를 정의하지 않습니다(컴포넌트 1~3개). 보통은 Aggregate가 불변식과 상태 전이를 지킵니다. 큼은 여러 Aggregate의 협력, 번역 계층, 이벤트까지 씁니다.
-- 컴포넌트는 분리 조건(트랜잭션 경계 · 외부 연동 · 공유 규칙 · 불변식 · 별도 진입점)이 있을 때만 나눕니다. 기존 프로젝트 구조가 먼저입니다.
+목차 `design.md`와 본문 8개 파일로 나뉩니다. 아키텍처(3 layer, DDD, Feature-based …)는 spec-mirror가 정하지 않고 프로젝트 convention을 따릅니다. design은 그 구조 안에서 요구사항의 기준마다 코드 어디서 판단하고 어떤 테스트가 확인하는지 정합니다.
 
 | 파일 | 내용 |
 |---|---|
 | `design.md` | 개요, 설계 목표, 문서 목차 |
-| `design/01-architecture.md` | 설계 규모, 도메인 경계, 레이어 구조, 트랜잭션 경계 |
+| `design/01-architecture.md` | 따른 convention, 연동 관계, 구조, 트랜잭션 경계 |
 | `design/02-components.md` | 컴포넌트와 인터페이스 (처리 순서가 요구사항과 같게) |
-| `design/03-data-models.md` | Aggregate, Value Object, 엔티티, API, 테이블, 도메인 용어 ↔ 코드 표 |
+| `design/03-data-models.md` | 도메인 모델, API, 테이블, 도메인 용어 ↔ 코드 표 |
 | `design/04-error-handling.md` | 에러 코드와 메시지, 로그 |
-| `design/05-testing.md` | 테스트 계층(유닛 · 통합 · E2E), 기준 ↔ 테스트 계층, 에러 ↔ E2E 시나리오, 테스트 기준 데이터 |
+| `design/05-testing.md` | 테스트 종류(convention), 기준 ↔ 테스트, 에러 ↔ 응답 테스트, 테스트 기준 데이터 |
 | `design/06-security-performance.md` | 보안, 성능 |
 | `design/07-correctness-properties.md` | 항상 성립해야 하는 성질 (Property) |
 | `design/08-deployment-configuration.md` | 배포, 설정 |
 
-전체 예시: [examples/order/design.md](examples/order/design.md) (규모 큼, 컴포넌트 11개) · [examples/wishlist/design.md](examples/wishlist/design.md) (규모 작음, 서비스 하나 + Repository)
+전체 예시: [examples/order/design.md](examples/order/design.md) (Aggregate 2개, 컴포넌트 11개) · [examples/wishlist/design.md](examples/wishlist/design.md) (서비스 하나 + Repository). 둘 다 [예제 convention](examples/convention/)을 따릅니다.
 
 </details>
 
@@ -206,18 +202,67 @@ Claude Code와 Node.js 18 이상이 필요합니다.
 - 프로젝트 전체면 기능 목록(`docs/spec/README.md`)을 먼저 만들고, 승인하면 기능을 하나씩 진행합니다.
 - 옮기다가 버그로 보이는 동작을 찾으면 고치지 않고 알려 줍니다. 고치는 것은 나중에 `/spec-mirror:bugfix`로 따로 합니다.
 
+## 팀 convention 따르기
+
+spec-mirror는 **명세를 쓰고, 명세와 테스트 · 코드를 잇는 일**만 합니다. 아키텍처, 이름 규칙, 검증 · 예외 처리, 테스트 종류, 코드 스타일은 프로젝트마다 다르므로 `docs/convention/`의 팀 규칙을 따릅니다.
+
+```
+docs/
+├── spec/            명세
+└── convention/      팀 개발 규칙
+    ├── architecture.md    구조 · 의존 방향 · 규칙을 두는 곳
+    ├── coding.md          이름 · 검증 · 예외 · 로깅 · 코드 스타일
+    └── testing.md         테스트 종류 · 도구
+```
+
+**convention이 있으면** 고치지 않고 그대로 따릅니다.
+
+- 파일 이름과 개수는 자유입니다. 하위 폴더까지 모두 읽습니다.
+- 다른 곳에 있으면 `.spec-mirror/config.json`의 `conventionDir`에 그 경로를 적습니다. 예: `"conventionDir": "wiki/rules"`
+
+**convention이 없으면** Claude가 만듭니다. `init`이나 첫 design · 구현 때 프로젝트 종류와 규모를 보고 아키텍처를 추천하고, 고르면 초안을 보여 준 뒤 저장합니다.
+
+| 종류 | 작은 프로젝트 | 보통 | 큰 프로젝트 |
+|---|---|---|---|
+| 백엔드 | 3 layer | 3 layer + 도메인 모델 | DDD + 헥사고날 |
+| 프론트엔드 | 페이지 기준 폴더 | Feature-based | Feature-Sliced Design |
+
+- 기존 코드가 있으면 지금 구조를 첫 번째 선택지로 둡니다.
+- 기존 코드를 명세로 옮길 때(adopt)는 추천하지 않고 지금 코드의 구조를 그대로 적습니다.
+
+**단계마다 읽는 범위가 다릅니다.**
+
+| 단계 | 읽는 것 | 예 |
+|---|---|---|
+| 설계 (design) | 설계에 관한 규칙만 | 구조, 이름 규칙, 예외 · 에러 응답, 검증 방식, 트랜잭션, 테스트 종류 |
+| 구현 (implement · sync) | 전부 | 위에 더해 코드 스타일, 로깅, 테스트 작성법, 커밋 규칙 |
+
+설계 문서에는 어떤 규칙을 따랐는지가 남습니다(design 01의 `따른 convention` 표).
+
+**convention과 spec-mirror 규칙이 부딪치면** 명세와 코드를 잇는 세 가지만 spec-mirror를 따르고, 나머지는 모두 convention을 따릅니다.
+
+- 테스트 이름 `R6-17 결제사가 주문과 같은 내용으로 승인하면 결제가 완료된다`와 given / when / then 본문
+- 코드 분기 주석 `// R6-17`
+- 에러 메시지를 요구사항과 글자까지 같게 쓰기
+
+**이런 때는 멈추고 묻습니다.**
+
+- 구현하다가 승인된 설계가 convention과 다른 것을 발견했을 때 → 설계를 고칠지 사용자가 정합니다.
+- 기존 코드가 convention과 다를 때 → 이번에 고치는 코드만 convention을 따르고, 나머지는 고치지 않고 알려 줍니다.
+
+예시: [examples/convention/](examples/convention/) (Spring 백엔드, 3 layer + DDD)
+
 ## 이렇게 동작합니다
 
 - **단계마다 사람이 승인합니다.** Claude가 스스로 다음 단계로 넘어가지 않습니다. 승인 전에는 다음 단계 문서를 쓸 수 없게 막혀 있습니다.
 - **형식을 자동으로 검사합니다.** 명세 문서를 저장할 때마다 검사하고, 틀린 곳은 Claude가 그 자리에서 고칩니다.
 - **리뷰어가 따로 봅니다.** 단계마다 별도의 리뷰 에이전트가 문서를 다시 읽고 빠진 것을 찾습니다. 승인을 요청할 때 무엇을 지적받았고 어떻게 처리했는지 함께 보여 줍니다.
-- **규모에 맞게 설계합니다.** design은 DDD를 따르되, 기능의 설계 규모(작음 · 보통 · 큼)에 맞는 도구만 씁니다. 작은 기능을 과하게 나누면 검사기가 경고하고 리뷰어가 지적합니다.
 - **이미 쓰는 용어를 그대로 씁니다.** 요구사항을 쓰기 전에 다른 명세의 용어와 코드의 엔티티 · enum 이름을 찾아, 같은 개념이면 그 이름을 씁니다. 코드에 `User`가 있으면 새 문서에서도 회원(Member)이 아니라 사용자(User)입니다. 용어와 문장은 개발자 말이 아니라 현업에서 쓰는 비즈니스 말로 씁니다.
-- **코드 이름은 도메인 용어를 따릅니다.** 요구사항 용어의 영문 이름이 클래스 · 변수 이름이 되고, 상태를 바꾸는 메서드는 `cancel()`, `expire()`처럼 행위 이름으로 짓습니다. design의 "도메인 용어 ↔ 코드" 표에 빠진 용어가 있거나 용어의 상태 값이 코드에 없으면 검사기가 알려 줍니다. `…Request` · `…Response` · `…Command` · `…Result` 같은 관례 접미사는 그대로 씁니다.
-- **검증은 두 곳으로 나눕니다.** 필수 값 · 길이 · 범위 · 형식처럼 요청만 보고 알 수 있는 검증은 Controller에서 Bean Validation 표준 어노테이션(`@NotBlank`, `@Size`, `@Min`, `@Pattern` 등)으로 하고, 존재 여부 · 상태 · 한도 같은 비즈니스 검증은 Application Service · 도메인에서 합니다.
+- **코드 이름은 도메인 용어를 따릅니다.** 요구사항 용어의 영문 이름이 클래스 · 변수 이름이 됩니다. design의 "도메인 용어 ↔ 코드" 표에 빠진 용어가 있거나 용어의 상태 값이 코드에 없으면 검사기가 알려 줍니다. 그 밖의 이름 스타일은 convention을 따릅니다.
+- **아키텍처는 팀 convention을 따릅니다.** 3 layer든 DDD든 `docs/convention/`의 규칙대로 설계하고 구현합니다. 없으면 규모에 맞는 구조를 추천해 만듭니다. [팀 convention 따르기](#팀-convention-따르기)
 - **명세와 코드를 번호로 잇습니다.** 요구사항의 기준 하나가 테스트 시나리오(`R1-2 …`)와 코드 분기 하나(`// R1-2`)로 이어집니다. `/spec-mirror:sync`가 빠진 것을 찾아 줍니다.
 - **테스트는 BDD 시나리오로 씁니다.** 이름은 `R6-17 결제사가 주문과 같은 내용으로 승인하면 결제가 완료된다`처럼 "<상황>이면 <결과>다" 문장이고, 본문은 given / when / then입니다. 개발자가 아니어도 읽을 수 있게 도메인 용어로 정책을 쓰고, 응답 코드 · 상태 값 같은 현상 확인은 테스트 지원 코드 안에 둡니다. 결과가 같은 경계값은 한 시나리오의 예시로 묶습니다.
-- **테스트는 판단이 있는 계층에서 합니다.** 도메인은 유닛, Application Service는 통합, Controller는 E2E 테스트입니다. 유닛 · 통합은 거절을 예외로 확인하고, 응답 코드는 E2E가 에러마다 확인합니다. 기준마다 어느 계층이 맡는지는 design 05의 표에 있습니다.
+- **빠진 테스트가 없게 합니다.** 기준마다 어떤 테스트가 확인하는지 design 05의 표에 남기고, 에러마다 회원이 실제로 받는 응답을 확인하는 테스트를 하나 이상 둡니다. 유닛 · 통합 · E2E 같은 테스트 종류는 convention을 따릅니다.
 - **승인 뒤에 문서를 고치면** 다시 승인받아야 다음 단계로 갈 수 있습니다.
 
 ## 명령
@@ -256,7 +301,8 @@ docs/spec/
 |---|---|
 | 요구사항 쓰는 법 | [rules/feature/requirements-format.md](rules/feature/requirements-format.md) |
 | 설계 · 태스크 쓰는 법 | [rules/feature/](rules/feature/) |
-| 설계 규모 · DDD · 이름 짓기 · 검증 위치 | [rules/feature/design-format.md](rules/feature/design-format.md) |
+| design 파일 구성 · 이름 짓기 | [rules/feature/design-format.md](rules/feature/design-format.md) |
+| convention 만들기 · 아키텍처 추천 · 우선순위 | [rules/convention.md](rules/convention.md) |
 | 버그 명세 쓰는 법 | [rules/bugfix/](rules/bugfix/) |
 | 기존 코드 옮기기 · 명세 지도 | [rules/adopt.md](rules/adopt.md), [rules/spec-map.md](rules/spec-map.md) |
 | 테스트 이름 · 코드 주석 규칙 | [rules/traceability.md](rules/traceability.md) |
@@ -270,11 +316,12 @@ docs/spec/
 |---|---|---|
 | `specRoot` | `docs/spec` | 명세 폴더 |
 | `techContext` | `CLAUDE.md`, `README.md` | Claude가 프로젝트의 기술 스택을 먼저 확인하는 문서 |
+| `conventionDir` | `docs/convention` | 팀 개발 규칙 폴더. 없으면 만들고, 설계 · 구현에서 가장 먼저 참고 ([팀 convention 따르기](#팀-convention-따르기)) |
 | `testPathPatterns` | 일반적인 테스트 경로 | 테스트 파일을 구분하는 규칙 |
 | `extraItemLabels` | 없음 | 요구사항 항목 이름으로 더 허용할 말 |
 | `stageGate` | `true` | 승인 전 다음 단계 작성 막기 |
 
-특정 언어나 프레임워크를 가정하지 않습니다. 기술 스택은 위 문서, 빌드 파일, 기존 코드에서 찾고, 그래도 모르면 물어봅니다.
+특정 언어나 프레임워크를 가정하지 않습니다. 기술 스택은 convention 폴더, 위 문서, 빌드 파일, 기존 코드 순서로 찾고, 그래도 모르면 물어봅니다.
 
 ## CI에서 형식 검사
 

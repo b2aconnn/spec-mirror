@@ -2,7 +2,7 @@
 name: sync
 description: spec-mirror 명세 동기화. 명세의 모든 기준(버그 명세는 기대 동작 · 유지할 동작)과 테스트(R{N}-{M} 이름) · 코드 분기(R{N}-{M} 주석)를 대조해 "기준 | 테스트 | 코드 | 불일치 내용" 표로 먼저 보고한 뒤, 문서를 기준으로 테스트 → 코드 순서로 고칩니다. "명세 동기화해줘", 문서와 코드가 맞는지 확인, 구현 마무리 점검에 사용합니다.
 argument-hint: <이름> [--report-only]
-allowed-tools: Bash(node *spec-mirror.mjs* check*), Bash(node *spec-mirror.mjs* trace*), Bash(node *spec-mirror.mjs* status*), Bash(node *spec-mirror.mjs* next*)
+allowed-tools: Bash(node *spec-mirror.mjs* check*), Bash(node *spec-mirror.mjs* trace*), Bash(node *spec-mirror.mjs* status*), Bash(node *spec-mirror.mjs* next*), Bash(node *spec-mirror.mjs* convention*)
 ---
 
 # spec-mirror: sync
@@ -50,6 +50,7 @@ allowed-tools: Bash(node *spec-mirror.mjs* check*), Bash(node *spec-mirror.mjs* 
    - `--report-only`면 여기서 멈춥니다.
    - 사용자에게 물어야 하는 항목을 먼저 모아서 묻습니다.
    - 나머지는 테스트 → 코드 순서로 고칩니다.
+   - 고치기 전에 `SM convention`으로 convention 문서를 확인하고, 있으면 **전부** 읽고 따릅니다. implement와 같습니다(`rules/convention.md`). 고치는 코드 밖의 convention 위반은 고치지 않고 보고합니다.
    - 문서를 고쳐야 하는 결정이 나오면 `/spec-mirror:spec` 또는 `/spec-mirror:bugfix`로 문서부터 고치고 재승인을 받습니다.
 
 7. **확인합니다.** 전체 테스트를 실행하고 `SM trace <이름>`을 다시 실행합니다. 결과를 그대로 보고합니다. 실패가 남으면 출력과 함께 보고합니다.

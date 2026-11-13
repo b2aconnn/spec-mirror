@@ -2,6 +2,37 @@
 
 이 프로젝트의 변경 이력입니다. 버전은 [Semantic Versioning](https://semver.org/)을 따릅니다.
 
+## [0.10.0] - 2026-11-13
+
+플러그인은 명세 작성과 명세 ↔ 테스트 ↔ 코드 추적에 집중하고, 아키텍처 · 코딩 규칙은 프로젝트 convention이 정합니다.
+
+### 추가
+- 프로젝트 convention (`rules/convention.md`): `docs/convention/`(설정 `conventionDir`으로 바꿀 수 있음)의 문서를 설계와 구현에서 가장 먼저 따름. 하위 폴더까지 모든 문서를 읽음
+  - 있으면 고치지 않고 그대로 따름. 아키텍처를 추천하지 않음
+  - 없으면 `init` · 첫 design · implement 때 프로젝트 종류(백엔드 · 프론트엔드 …)와 규모에 맞는 아키텍처를 추천하고(백엔드: 3 layer → 3 layer + 도메인 모델 → DDD + 헥사고날, 프론트엔드: 페이지 기준 → Feature-based → Feature-Sliced Design), 사용자가 고르면 초안을 확인받아 만듦. 기존 코드가 있으면 지금 구조가 첫 선택지. adopt는 추천 없이 지금 구조를 적음
+  - design(기능 · 버그 · adopt)은 설계에 관한 규칙만 읽고 01 `### 따른 convention` 표에 남김. 구현(implement, sync의 수정, adopt의 도입 작업)은 전부 따름
+  - 우선순위: spec-mirror 추적 규칙(테스트 이름 · given / when / then, `R{N}-{M}` 주석, 에러 메시지 원문) → convention → design → 프로젝트 문서 · 기존 코드
+  - 구현 중 design이 convention과 다르면 멈추고 보고. 범위 밖 기존 코드의 위반은 고치지 않고 보고
+- convention 틀 `templates/convention/`(architecture · coding · testing), 예제 프로젝트의 convention `examples/convention/`(architecture · coding · validation · testing)
+- 검사기 `convention [--json]` 명령: convention 문서 목록. `init`이 만드는 설정에 `conventionDir` 포함
+- README "팀 convention 따르기"
+
+### 제거 (convention으로 넘김)
+- 설계 규모(작음 · 보통 · 큼)와 DDD 도구 선택, 컴포넌트 나누기 조건. 01 `### 설계 규모` · `### 도메인 경계`, 03 `### Aggregates` 필수 섹션
+- 검사 DES012(규모 값) · DES013(규모별 컴포넌트 수) · DES014(규모와 Aggregates) · DES015(Aggregates 참조)
+- 이름 짓기 중 스타일 규칙(행위 메서드, 유스케이스 메서드, 접미사, 뜻이 흐린 이름). Glossary 영문 이름 · ENUM 값 · 03 용어 표는 남김
+- 검증 위치(요청 검증은 진입점, 비즈니스 검증은 Service · 도메인)와 Spring Bean Validation 규칙
+- 테스트 계층 고정 매핑(도메인 = 유닛, Application Service = 통합, Controller = E2E)과 거절을 예외 / 응답으로 확인하는 곳
+- adopt의 "구조 개선 후보" 보고
+- 리뷰어의 설계 규모 · 과하게 나눔 · 덜 나눔 · Aggregate 경계 · 검증 위치 항목
+
+### 변경
+- design 05: `기준 ↔ 테스트 계층` → `기준 ↔ 테스트`(테스트 종류는 convention), `에러 ↔ E2E 시나리오` → `에러 ↔ 응답 테스트`(에러마다 회원이 받는 응답을 확인하는 시나리오 하나 이상). 예전 제목도 검사기가 받음
+- design 01: `### 따른 convention`(필수) · `### 연동 관계` · `### 구조 설명`, 03: `### Domain Models`(convention 구조대로), 04: `#### 1. 예외 처리 방식`
+- design 규칙에 남은 플러그인 규칙: 기준 하나는 한 곳에서 판단, 확인 순서 = 처리 흐름 순서, 여러 위반이면 앞선 하나만 응답, 에러 메시지 원문, requirements에 없는 동작 금지
+- tasks의 테스트 작성은 `<테스트 종류>: <시나리오>`로 씀
+- 예제 order · wishlist · confirm-recheck-mismatch를 예제 convention을 따르는 형태로 정리
+
 ## [0.9.0] - 2026-11-13
 
 ### 변경

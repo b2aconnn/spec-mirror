@@ -6,7 +6,7 @@
 
 ### 에러 처리 전략
 
-#### 1. 계층별 예외 처리
+#### 1. 예외 처리 방식
 
 **Controller Layer:**
 - `WishlistExceptionHandler`가 `WishlistException`을 기존 `ErrorResponse`로 변환

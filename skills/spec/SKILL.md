@@ -2,7 +2,7 @@
 name: spec
 description: spec-mirror 기능 명세. 새 기능이나 기능 변경을 requirements → design → tasks 세 단계로, 단계마다 사용자 승인을 받으며 진행합니다. 처음 부르면 requirements 를 쓰고, 다시 부르면 지금 단계에 맞춰 이어서 합니다. 새 기능을 만들거나 기존 기능의 동작을 바꾸거나 "스펙 써줘", "요구사항 정리해줘", "설계 문서 만들어줘", "태스크 뽑아줘" 같은 요청에 사용합니다. 버그는 bugfix 를 씁니다.
 argument-hint: <이름> [requirements|design|tasks] [만들거나 바꿀 것]
-allowed-tools: Bash(node *spec-mirror.mjs* next*), Bash(node *spec-mirror.mjs* gate*), Bash(node *spec-mirror.mjs* status*), Bash(node *spec-mirror.mjs* check*), Bash(node *spec-mirror.mjs* scaffold*), Bash(node *spec-mirror.mjs* init*), Bash(node *spec-mirror.mjs* list*), Bash(node *spec-mirror.mjs* trace*)
+allowed-tools: Bash(node *spec-mirror.mjs* next*), Bash(node *spec-mirror.mjs* gate*), Bash(node *spec-mirror.mjs* status*), Bash(node *spec-mirror.mjs* check*), Bash(node *spec-mirror.mjs* scaffold*), Bash(node *spec-mirror.mjs* init*), Bash(node *spec-mirror.mjs* list*), Bash(node *spec-mirror.mjs* trace*), Bash(node *spec-mirror.mjs* convention*)
 ---
 
 # spec-mirror: spec (기능 명세)
@@ -15,8 +15,8 @@ allowed-tools: Bash(node *spec-mirror.mjs* next*), Bash(node *spec-mirror.mjs* g
 
 - 검사기: `node "<BASE>/../../scripts/spec-mirror.mjs"` (아래에서 `SM`)
 - 단계별 안내: `<BASE>/stages/requirements.md`, `<BASE>/stages/design.md`, `<BASE>/stages/tasks.md`
-- 규칙: `<BASE>/../../rules/` (`feature/`, `traceability.md`, `workflow.md`)
-- 정답 예제: `<BASE>/../../examples/order/` (설계 규모 큼), `<BASE>/../../examples/wishlist/` (설계 규모 작음)
+- 규칙: `<BASE>/../../rules/` (`feature/`, `traceability.md`, `workflow.md`, `convention.md`)
+- 정답 예제: `<BASE>/../../examples/order/`, `<BASE>/../../examples/wishlist/` (작은 기능), 예제 프로젝트의 convention `<BASE>/../../examples/convention/`
 
 ## 절차
 

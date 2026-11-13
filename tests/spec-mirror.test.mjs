@@ -78,17 +78,12 @@ describe('정답 예제', () => {
     assert.equal(r.design.properties.length, 20)
   })
 
-  test('wishlist: 오류 0, 경고 0, 설계 규모 작음 · 컴포넌트 2개', () => {
+  test('wishlist: 오류 0, 경고 0, 컴포넌트 2개', () => {
     const r = project().check('wishlist')
     assert.equal(r.type, 'feature')
     assert.deepEqual(r.report.errors, [], fmt(r.report.errors))
     assert.deepEqual(r.report.warnings, [], fmt(r.report.warnings))
-    assert.equal(r.design.scale, '작음')
     assert.equal(r.design.components.length, 2)
-  })
-
-  test('order: 설계 규모 큼', () => {
-    assert.equal(project().check('order').design.scale, '큼')
   })
 
   test(`${BUG}: 오류 0, 경고 0`, () => {
@@ -212,59 +207,28 @@ mutationCases('design 본문 검사', 'order', 'design/07-correctness-properties
   ['DES010', '없는 기준 검증', '**Validates: Requirements 8.7**', '**Validates: Requirements 8.9**'],
 ])
 
-mutationCases('design 설계 규모', 'order', 'design/01-architecture.md', [
-  ['DES006', '설계 규모 섹션 누락', '### 설계 규모', '### 규모'],
-  ['DES006', '도메인 경계 섹션 누락', '### 도메인 경계', '### 경계'],
-  ['DES012', '규모 값이 정해진 셋이 아님', '**규모: 큼**', '**규모: 중간**'],
-  ['DES012', '규모 줄 누락', '**규모: 큼**', '규모는 크다'],
-])
-
-mutationCases('design Aggregates', 'order', 'design/03-data-models.md', [
+mutationCases('design 용어 표', 'order', 'design/03-data-models.md', [
   ['DES016', 'Glossary 용어가 용어 표에 없음', '| 주문명 | `Order.orderName` |\n', '', 'warning'],
-  ['DES006', 'Aggregates 섹션 누락', '### Aggregates', '### 집합'],
-  ['DES015', '없는 기준 참조', 'Requirements 6.24, 6.25, 6.26', 'Requirements 6.24, 6.25, 6.27'],
 ])
 
-mutationCases('design 테스트 계층', 'order', 'design/05-testing.md', [
-  ['DES006', '기준 ↔ 테스트 계층 섹션 누락', '#### 2. 기준 ↔ 테스트 계층', '#### 2. 테스트 계층 표'],
+mutationCases('design 기준 ↔ 테스트', 'order', 'design/05-testing.md', [
+  ['DES006', '기준 ↔ 테스트 섹션 누락', '#### 2. 기준 ↔ 테스트', '#### 2. 테스트 표'],
   ['DES017', '없는 기준 참조', '| 9.1 ~ 9.5 | Order Payment Synchronizer', '| 9.1 ~ 9.6 | Order Payment Synchronizer'],
   ['DES017', '표에 없는 기준', '| 9.1 ~ 9.5 | Order Payment Synchronizer', '| 9.1 ~ 9.4 | Order Payment Synchronizer', 'warning'],
 ])
 
-describe('design 설계 규모와 컴포넌트 수', () => {
-  test('DES014 작음 예제에 Aggregate 표를 넣으면 경고', () => {
+describe('design 아키텍처는 convention 이 정한다', () => {
+  test('예전 제목 "기준 ↔ 테스트 계층" 도 받는다', () => {
     const p = project()
-    edit(p.file('wishlist', 'design/03-data-models.md'), '해당 없음 — 설계 규모 작음', '| Aggregate | Root | 함께 묶이는 것 | 지키는 규칙 |\n|---|---|---|---|\n| 찜 | `Wish` | 담은 일시 | Requirements 1.9 |\n\n설계 규모 작음')
-    assert.equal(warningsOf(p.check('wishlist'), 'DES014').length, 1)
-  })
-  test('DES013 작음 예제의 컴포넌트가 3개를 넘으면 경고', () => {
-    const p = project()
-    const extra = ['Wish Validator', 'Wishlist Facade'].map((t, i) => `### ${i + 3}. ${t}\n\n**역할:** 테스트\n`).join('\n')
-    fs.appendFileSync(p.file('wishlist', 'design/02-components.md'), `\n${extra}`)
-    assert.equal(warningsOf(p.check('wishlist'), 'DES013').length, 1)
-  })
-  test('DES013 보통인데 컴포넌트가 7개를 넘으면 경고', () => {
-    const p = project()
-    edit(p.file('order', 'design/01-architecture.md'), '**규모: 큼**', '**규모: 보통**')
-    const w = warningsOf(p.check('order'), 'DES013')
-    assert.equal(w.length, 1)
-    assert.match(w[0].message, /11개/)
-  })
-  test('DES013 · DES014 작음인데 컴포넌트가 많고 Aggregate 표가 있으면 경고', () => {
-    const p = project()
-    edit(p.file('order', 'design/01-architecture.md'), '**규모: 큼**', '**규모: 작음**')
+    edit(p.file('order', 'design/05-testing.md'), '#### 2. 기준 ↔ 테스트', '#### 2. 기준 ↔ 테스트 계층')
     const r = p.check('order')
-    assert.equal(warningsOf(r, 'DES013').length, 1)
-    assert.equal(warningsOf(r, 'DES014').length, 1)
+    assert.deepEqual(errorsOf(r, 'DES006'), [])
+    assert.deepEqual(warningsOf(r, 'DES017'), [])
   })
-  test('DES014 보통 이상인데 Aggregates 가 해당 없음이면 경고', () => {
+  test('설계 규모 · Aggregates 섹션이 없어도 오류가 아니다', () => {
     const p = project()
-    const f = p.file('order', 'design/03-data-models.md')
-    const text = fs.readFileSync(f, 'utf8')
-    const start = text.indexOf('### Aggregates')
-    const end = text.indexOf('### Value Objects')
-    fs.writeFileSync(f, text.slice(0, start) + '### Aggregates\n\n해당 없음 — 테스트\n\n' + text.slice(end))
-    assert.equal(warningsOf(p.check('order'), 'DES014').length, 1)
+    const r = p.check('wishlist')
+    assert.deepEqual(r.report.errors, [], fmt(r.report.errors))
   })
 })
 
@@ -659,6 +623,23 @@ describe('CLI', () => {
     const cfg = JSON.parse(fs.readFileSync(path.join(dir, '.spec-mirror/config.json'), 'utf8'))
     assert.equal(cfg.specRoot, 'docs/spec')
     assert.match(cli(dir, 'init').stdout, /이미 설정/)
+    assert.equal(cfg.conventionDir, 'docs/convention')
+  })
+
+  test('convention 은 설정한 폴더의 문서를 하위 폴더까지 보여 준다', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'spec-mirror-conv-'))
+    fs.mkdirSync(path.join(dir, '.git'))
+    assert.deepEqual(JSON.parse(cli(dir, 'convention', '--json').stdout), { dir: 'docs/convention', files: [] })
+    fs.mkdirSync(path.join(dir, 'docs/convention/backend'), { recursive: true })
+    fs.writeFileSync(path.join(dir, 'docs/convention/coding.md'), '# 코딩')
+    fs.writeFileSync(path.join(dir, 'docs/convention/backend/validation.md'), '# 검증')
+    fs.writeFileSync(path.join(dir, 'docs/convention/.DS_Store'), '')
+    assert.deepEqual(JSON.parse(cli(dir, 'convention', '--json').stdout).files, ['docs/convention/backend/validation.md', 'docs/convention/coding.md'])
+    fs.mkdirSync(path.join(dir, '.spec-mirror'))
+    fs.writeFileSync(path.join(dir, '.spec-mirror/config.json'), JSON.stringify({ conventionDir: 'team/rules' }))
+    fs.mkdirSync(path.join(dir, 'team/rules'), { recursive: true })
+    fs.writeFileSync(path.join(dir, 'team/rules/api.md'), '# API')
+    assert.deepEqual(JSON.parse(cli(dir, 'convention', '--json').stdout), { dir: 'team/rules', files: ['team/rules/api.md'] })
   })
 
   test('expandRefs', () => {

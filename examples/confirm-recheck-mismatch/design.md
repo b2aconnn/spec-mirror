@@ -177,9 +177,9 @@ END FOR
 
 ### 테스트 이름
 
-고치는 코드가 Payment Confirm Service에 있으므로 기대 동작은 통합 테스트가 맡고, 회원이 받는 응답 코드가 바뀌므로(`400` → `502`) E2E 시나리오도 둡니다. 테스트는 BDD 시나리오(given / when / then)로 씁니다.
+고치는 코드가 Payment Confirm Service에 있으므로 convention(`docs/convention/testing.md`)대로 기대 동작은 통합 테스트가 맡고, 회원이 받는 응답 코드가 바뀌므로(`400` → `502`) 그 응답을 확인하는 E2E 시나리오도 둡니다. 테스트는 BDD 시나리오(given / when / then)로 씁니다.
 
-| bugfix 항목 | 테스트 | 계층 | 위치 |
+| bugfix 항목 | 테스트 | 종류 | 위치 |
 |---|---|---|---|
 | 2.1 | `R6-21c 결제사에 다시 조회한 승인 내용이 주문과 다르면 그 결제는 취소되고 실패한다` (신규) | 통합 | `PaymentConfirmIntegrationTest` |
 | 2.1, 2.2 | `R6-21d 결제사에 다시 조회한 승인 내용이 주문과 다르면 결제를 취소했다고 안내받는다` (신규) | E2E | `OrderPaymentE2ETest` |

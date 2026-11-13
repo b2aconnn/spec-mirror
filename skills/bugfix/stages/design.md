@@ -7,6 +7,7 @@
 1. `<BASE>/../../rules/bugfix/design-format.md` — 섹션과 규칙
 2. `<BASE>/../../rules/traceability.md`의 "버그 명세" — 테스트 이름
 3. `<BASE>/../../examples/confirm-recheck-mismatch/design.md` — 정답 예제
+4. `<BASE>/../../rules/convention.md` — convention이 없을 때 만드는 법, 우선순위, design에서 읽는 범위
 
 ## 절차
 
@@ -21,6 +22,7 @@
 3. **버그 조건을 정합니다.** `isBugCondition(input)`을 관찰 가능한 값으로 씁니다. 참이면 1.M, 거짓이면 3.M의 범위입니다.
 
 4. **고치는 범위를 정합니다.**
+   - `SM convention`으로 convention 문서가 있는지 봅니다. 없으면 `rules/convention.md`의 "없을 때"대로 먼저 만듭니다. 있으면 **설계에 관한 것만** 읽습니다(구조, 의존 방향, 이름, 예외 · 에러 구조, 검증 방식, 트랜잭션, 테스트 종류 · 도구). 고치는 위치와 방법, 새로 생기는 이름, 테스트 종류가 convention을 따르게 정하고, 따른 규칙과 근거 문서를 Fix Implementation에 적습니다.
    - 유지할 동작(3.M)을 하나씩 보며, 고칠 곳이 그 동작을 바꾸지 않는지 확인합니다.
    - 같은 코드를 쓰는 다른 호출자가 있으면, 그 호출자의 동작이 바뀌지 않는 위치를 고릅니다.
    - "바꾸지 않는 것"과 그 이유를 씁니다.

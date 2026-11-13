@@ -4,24 +4,14 @@
 
 ## Data Models
 
-### Aggregates
+### Domain Models
 
-<설계 규모 작음이면 "해당 없음 — 설계 규모 작음: <이유>">
+<convention의 구조대로 (예: DDD면 Aggregate · Value Object · Entity, 3 layer면 Entity)>
 
-| Aggregate | Root | 함께 묶이는 것 | 지키는 규칙 |
-|---|---|---|---|
-| <이름> | `<Root 엔티티>` | <엔티티 · Value Object> | Requirements <N.M> |
-
-### Value Objects
-
-<규칙이나 계산이 있는 값. 없으면 "해당 없음 — <이유>">
-
-### Domain Entities
-
-#### <Entity> Entity
+#### <Name>
 
 ```<언어>
-<엔티티>
+<도메인 모델>
 ```
 
 ### DTOs (Data Transfer Objects)

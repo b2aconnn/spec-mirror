@@ -4,13 +4,7 @@
 
 ## Data Models
 
-### Aggregates
-
-해당 없음 — 설계 규모 작음: 찜은 상태가 없고, 지킬 규칙은 "같은 상품 한 번"(Requirements 1.9)뿐이며 유니크 제약 하나로 지킵니다. `Wish`는 단순 엔티티로 둡니다.
-
-### Value Objects
-
-해당 없음 — 규칙이나 계산이 있는 값이 없습니다. 찜 100개 한도는 개수 비교 한 줄이라 서비스에 둡니다.
+찜은 상태가 없고, 지킬 규칙은 "같은 상품 한 번"(Requirements 1.9)뿐이며 유니크 제약 하나로 지킵니다. 그래서 convention대로 Aggregate · Value Object 없이 `Wish`를 단순 엔티티로 둡니다. 찜 100개 한도는 개수 비교 한 줄이라 서비스에 둡니다.
 
 ### Domain Entities
 
