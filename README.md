@@ -89,7 +89,7 @@ Claude Code와 Node.js 18 이상이 필요합니다.
 - 처리 흐름의 기준마다 색이 붙습니다. 🟢 기능 흐름(요청 · 동작 · 응답) · 🟠 검증 · 🟣 외부 요청이고, 뜻은 `## 기능별 요구사항` 바로 아래 범례 한 줄에 있습니다. 🟢만 따라 읽으면 기능 흐름이, 🟠만 따라 읽으면 검증 목록이 보입니다. 분류 근거는 Cockburn의 유스케이스 단계 종류입니다.
 - 한국 사람이 읽기 편한 한국어 틀(요구사항 · 개요 · 용어 · 사용자 이야기 · 인수 조건)로 씁니다. 영어 틀(Requirements Document · User Story …)로 쓴 기존 문서도 그대로 검사를 통과합니다.
 - **처리 흐름**은 코드가 실행되는 순서 그대로입니다. 위에서 아래로 읽으면 코드를 위에서 아래로 읽는 것과 같습니다.
-- 기준 하나가 테스트 시나리오(`R1-2b 주문 상품이 없거나 20개를 넘으면 주문할 수 없다`)와 코드 분기 하나(`// R1-2`)가 됩니다.
+- 기준 하나는 테스트 시나리오(`R1-2b 주문 상품이 없거나 20개를 넘으면 주문할 수 없다`)와 코드 분기 하나(`// R1-2`)로 이어집니다.
 
 전체 예시: [examples/order/requirements.md](examples/order/requirements.md)
 
@@ -136,6 +136,7 @@ Claude Code와 Node.js 18 이상이 필요합니다.
     - **Validates: Requirements 1.2, 1.3, 1.4**
 ```
 
+- 테스트 종류(유닛 · 통합 · E2E)는 예제 프로젝트의 convention을 따른 것입니다.
 - 모든 요구사항 기준이 어떤 태스크에 들어 있어야 합니다.
 - `*`가 붙은 태스크는 선택입니다. 끝에 있는 Task Dependency Graph에 병렬로 할 수 있는 태스크가 나옵니다.
 
@@ -146,7 +147,7 @@ Claude Code와 Node.js 18 이상이 필요합니다.
 ### 버그 고치기
 
 ```text
-/spec-mirror:bugfix pay-mismatch 결제 금액이 다를 때 400 이 나오는데 502 여야 함
+/spec-mirror:bugfix pay-mismatch 결제 금액이 다를 때 400이 나오는데 502여야 함
 ```
 
 버그 설명에 **재현 방법, 지금 결과, 기대 결과, 바뀌면 안 되는 것**을 적으면 좋습니다.
@@ -173,7 +174,7 @@ Claude Code와 Node.js 18 이상이 필요합니다.
 
 ### Expected Behavior (Correct)
 
-2.1 **… 승인 응답에서 불일치가 난 때와 같이 PG 승인을 취소하고 결제 실패로 응답한다.**
+2.1 **… 승인 응답에서 불일치가 났을 때와 같이 PG 승인을 취소하고 결제 실패로 응답한다.**
    - 에러: `502` `PG_RESPONSE_MISMATCH`
    - 메시지: "결제사 응답이 주문 정보와 일치하지 않아 결제를 취소했습니다."
    - 명세: order 6.21
@@ -210,7 +211,7 @@ spec-mirror는 **명세를 쓰고, 명세와 테스트 · 코드를 잇는 일**
 docs/
 ├── spec/            명세
 └── convention/      팀 개발 규칙
-    ├── architecture.md    구조 · 의존 방향 · 규칙을 두는 곳
+    ├── architecture.md    구조 · 의존 방향 · 도메인 규칙을 두는 곳
     ├── coding.md          이름 · 검증 · 예외 · 로깅 · 코드 스타일
     └── testing.md         테스트 종류 · 도구
 ```
@@ -229,11 +230,11 @@ docs/
 **convention이 있으면** 고치지 않고 그대로 따릅니다. 예외는 용어 하나입니다.
 
 - convention의 용어(용어집 · 용어 표)가 요구사항의 용어보다 우선합니다.
-- 요구사항에서 convention에 없는 용어를 새로 정의했거나 다르게 썼으면, design을 시작하기 전에 표로 보여 주고 용어마다 **추가 · 변경 · 그대로**를 묻습니다. 고른 것만 convention에 반영한 뒤 design을 씁니다.
+- 요구사항에서 convention에 없는 용어를 새로 정의했거나 다르게 썼으면, 설계를 시작하기 전에 표로 보여 주고 용어마다 **추가 · 변경 · 그대로**를 묻습니다. 고른 것만 convention에 반영한 뒤 설계합니다.
 
-**convention이 없으면** Claude가 만듭니다. `init`이나 첫 design · 구현 때 프로젝트 종류와 규모를 보고 아키텍처를 추천하고, 고르면 초안을 보여 준 뒤 `docs/convention/`에 저장합니다.
+**convention이 없으면** Claude가 만듭니다. `init`이나 첫 설계 · 구현 때 프로젝트 종류와 규모를 보고 아키텍처를 추천하고, 고르면 초안을 보여 준 뒤 `docs/convention/`에 저장합니다.
 
-| 종류 | 작은 프로젝트 | 보통 | 큰 프로젝트 |
+| 종류 | 작은 프로젝트 | 중간 규모 | 큰 프로젝트 |
 |---|---|---|---|
 | 백엔드 | 3 layer | 3 layer + 도메인 모델 | DDD + 헥사고날 |
 | 프론트엔드 | 페이지 기준 폴더 | Feature-based | Feature-Sliced Design |
@@ -256,10 +257,10 @@ docs/
 - 코드 분기 주석 `// R6-17`
 - 에러 메시지를 요구사항과 글자까지 같게 쓰기
 
-**이런 때는 멈추고 묻습니다.**
+**convention과 다른 것을 발견하면**
 
-- 구현하다가 승인된 설계가 convention과 다른 것을 발견했을 때 → 설계를 고칠지 사용자가 정합니다.
-- 기존 코드가 convention과 다를 때 → 이번에 고치는 코드만 convention을 따르고, 나머지는 고치지 않고 알려 줍니다.
+- 구현하다가 승인된 설계가 convention과 다르면 → 멈추고, 설계를 고칠지 사용자에게 묻습니다.
+- 기존 코드가 convention과 다르면 → 이번에 고치는 코드만 convention을 따르고, 나머지는 고치지 않고 알려 줍니다.
 
 예시: [examples/convention/](examples/convention/) (Spring 백엔드, 3 layer + DDD)
 
@@ -268,9 +269,9 @@ docs/
 - **단계마다 사람이 승인합니다.** Claude가 스스로 다음 단계로 넘어가지 않습니다. 승인 전에는 다음 단계 문서를 쓸 수 없게 막혀 있습니다.
 - **형식을 자동으로 검사합니다.** 명세 문서를 저장할 때마다 검사하고, 틀린 곳은 Claude가 그 자리에서 고칩니다.
 - **리뷰어가 따로 봅니다.** 단계마다 별도의 리뷰 에이전트가 문서를 다시 읽고 빠진 것을 찾습니다. 승인을 요청할 때 무엇을 지적받았고 어떻게 처리했는지 함께 보여 줍니다.
-- **이미 쓰는 용어를 그대로 씁니다.** 요구사항을 쓰기 전에 **convention 문서의 용어를 가장 먼저**, 그다음 다른 명세의 용어와 코드의 엔티티 · enum 이름을 찾아 같은 개념이면 그 이름을 씁니다. 코드에 `User`가 있으면 새 문서에서도 회원(Member)이 아니라 사용자(User)입니다. 용어와 문장은 개발자 말이 아니라 현업에서 쓰는 비즈니스 말로 씁니다. convention에 없는 용어를 새로 정의했으면, design을 시작하기 전에 convention에 추가하거나 바꿀지 물어봅니다.
+- **이미 쓰는 용어를 그대로 씁니다.** 요구사항을 쓰기 전에 convention의 용어를 가장 먼저 보고, 그다음 다른 명세의 용어와 코드의 엔티티 · enum 이름을 찾아 같은 개념이면 그 이름을 씁니다. 코드에 `User`가 있으면 새 문서에서도 회원(Member)이 아니라 사용자(User)입니다. 용어와 문장은 개발자 말이 아니라 현업에서 쓰는 비즈니스 말로 씁니다.
 - **코드 이름은 도메인 용어를 따릅니다.** 요구사항 용어의 영문 이름이 클래스 · 변수 이름이 됩니다. design의 "도메인 용어 ↔ 코드" 표에 빠진 용어가 있거나 용어의 상태 값이 코드에 없으면 검사기가 알려 줍니다. 그 밖의 이름 스타일은 convention을 따릅니다.
-- **아키텍처는 팀 convention을 따릅니다.** 3 layer든 DDD든 팀 convention 문서대로 설계하고 구현합니다. 없으면 규모에 맞는 구조를 추천해 만듭니다. [팀 convention 따르기](#팀-convention-따르기)
+- **아키텍처는 팀 convention을 따릅니다.** 3 layer든 DDD든 팀 convention대로 설계하고 구현합니다. convention이 없으면 규모에 맞는 구조를 추천해 만듭니다([팀 convention 따르기](#팀-convention-따르기)).
 - **명세와 코드를 번호로 잇습니다.** 요구사항의 기준 하나가 테스트 시나리오(`R1-2 …`)와 코드 분기 하나(`// R1-2`)로 이어집니다. `/spec-mirror:sync`가 빠진 것을 찾아 줍니다.
 - **테스트는 BDD 시나리오로 씁니다.** 이름은 `R6-17 결제사가 주문과 같은 내용으로 승인하면 결제가 완료된다`처럼 "<상황>이면 <결과>다" 문장이고, 본문은 given / when / then입니다. 개발자가 아니어도 읽을 수 있게 도메인 용어로 정책을 쓰고, 응답 코드 · 상태 값 같은 현상 확인은 테스트 지원 코드 안에 둡니다. 결과가 같은 경계값은 한 시나리오의 예시로 묶습니다.
 - **빠진 테스트가 없게 합니다.** 기준마다 어떤 테스트가 확인하는지 design 05의 표에 남기고, 에러마다 회원이 실제로 받는 응답을 확인하는 테스트를 하나 이상 둡니다. 유닛 · 통합 · E2E 같은 테스트 종류는 convention을 따릅니다.
@@ -293,6 +294,7 @@ docs/
 ## 만들어지는 문서
 
 ```
+docs/convention/            팀 규칙 (없을 때 init · 첫 설계에서 만듦)
 docs/spec/
 ├── README.md               명세 지도: 기능 목록과 순서 (adopt)
 ├── order/                  기능 명세
@@ -312,7 +314,7 @@ docs/spec/
 |---|---|
 | 요구사항 쓰는 법 | [rules/feature/requirements-format.md](rules/feature/requirements-format.md) |
 | 설계 · 태스크 쓰는 법 | [rules/feature/](rules/feature/) |
-| design 파일 구성 · 이름 짓기 | [rules/feature/design-format.md](rules/feature/design-format.md) |
+| 설계 파일 구성 · 이름 짓기 | [rules/feature/design-format.md](rules/feature/design-format.md) |
 | convention 만들기 · 아키텍처 추천 · 우선순위 | [rules/convention.md](rules/convention.md) |
 | 버그 명세 쓰는 법 | [rules/bugfix/](rules/bugfix/) |
 | 기존 코드 옮기기 · 명세 지도 | [rules/adopt.md](rules/adopt.md), [rules/spec-map.md](rules/spec-map.md) |
@@ -333,7 +335,7 @@ docs/spec/
 | `extraItemLabels` | 없음 | 요구사항 항목 이름으로 더 허용할 말 |
 | `stageGate` | `true` | 승인 전 다음 단계 작성 막기 |
 
-특정 언어나 프레임워크를 가정하지 않습니다. 기술 스택은 convention 문서, 위 문서, 빌드 파일, 기존 코드 순서로 찾고, 그래도 모르면 물어봅니다.
+특정 언어나 프레임워크를 가정하지 않습니다. 기술 스택은 convention 문서, `techContext` 문서, 빌드 파일, 기존 코드 순서로 찾고, 그래도 모르면 물어봅니다.
 
 **convention 위치를 바꾸는 예**
 
@@ -348,7 +350,7 @@ docs/spec/
 ```
 
 - 폴더만 쓰려면 `"conventionFiles": []`, 이름으로만 찾으려면 `"conventionDir": ""`로 둡니다.
-- 지금 어떤 문서를 읽는지는 Claude에게 "convention 뭐 읽고 있어?"라고 물으면 알려 줍니다. (검사기 명령: `node <플러그인>/scripts/spec-mirror.mjs convention`)
+- 지금 어떤 문서를 읽는지는 Claude에게 "어떤 convention 문서를 읽고 있어?"라고 물어보면 됩니다. 직접 확인하려면 `node <플러그인 경로>/scripts/spec-mirror.mjs convention`을 실행합니다.
 
 ## CI에서 형식 검사
 

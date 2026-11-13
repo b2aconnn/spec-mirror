@@ -29,7 +29,7 @@ Run this once in your project:
 /spec-mirror:init
 ```
 
-It creates `.spec-mirror/config.json` and the spec folder `docs/spec/`. If there are no convention docs, it recommends an architecture for your project and creates it once you pick one.
+It creates `.spec-mirror/config.json` and the spec folder `docs/spec/`. If there are no convention docs, it recommends an architecture for your project and, once you pick one, creates them in `docs/convention/` (see [Following your team's conventions](#following-your-teams-conventions)).
 
 ## Usage
 
@@ -83,7 +83,7 @@ spec-mirror only writes specs and links them to tests and code. Architecture, na
 docs/
 ├── spec/            specs
 └── convention/      team rules
-    ├── architecture.md    structure, dependency direction, where rules live
+    ├── architecture.md    structure, dependency direction, where domain rules live
     ├── coding.md          naming, validation, errors, logging, code style
     └── testing.md         test kinds and tools
 ```
@@ -93,9 +93,11 @@ Convention docs are found in two ways (both are read):
 | Way | Example | Where |
 |---|---|---|
 | A folder | `docs/convention/architecture.md` | every file under `docs/convention/` (setting `conventionDir`) |
-| A file name | `convention.md`, `project-convention.md`, `backend-convention.md` | any file named `convention.md` or `*-convention.md` anywhere in the project, case-insensitive (setting `conventionFiles`) |
+| A file name | `convention.md`, `project-convention.md`, `backend-convention.md` | any file named `convention.md` or `*-convention.md` anywhere in the project (setting `conventionFiles`) |
 
-`node_modules`, `build` and dot folders are skipped. To change it:
+- File names are case-insensitive (`CONVENTION.md` works too).
+- `node_modules`, `build` and folders starting with `.` are skipped.
+- To look somewhere else, change the settings in `.spec-mirror/config.json`:
 
 ```jsonc
 {
@@ -104,17 +106,40 @@ Convention docs are found in two ways (both are read):
 }
 ```
 
-- **If they exist**, Claude follows them as is and never edits them — except terms: convention terms win over requirements, and new or differing terms are listed before design so you can choose to add, change or keep each one.
-- **If there are none**, Claude creates them in `docs/convention/` during `init` or the first design / implementation: it looks at the project kind and size, recommends an architecture, and saves a draft once you pick one. Existing code's structure is always the first option; adopt just records the current structure.
+**If they exist**, Claude follows them as is and never edits them. Terms are the one exception:
+
+- Convention terms (glossary, term tables) win over the terms in requirements.
+- If requirements define a term the convention doesn't have, or use a different one, Claude lists them in a table before design and asks for each: **add, change or keep**. Only what you choose goes into the convention, then design starts.
+
+**If there are none**, Claude creates them. During `init` or the first design / implementation it looks at the project kind and size, recommends an architecture, and saves a draft to `docs/convention/` once you pick one.
 
 | Kind | Small | Medium | Large |
 |---|---|---|---|
 | Backend | 3 layer | 3 layer + domain model | DDD + hexagonal |
 | Frontend | page folders | feature-based | Feature-Sliced Design |
 
-- **Design** reads only the design rules and records what it followed in design 01's `따른 convention` table. **Implementation** (implement, sync) follows all of it.
-- On conflict, only three things stay spec-mirror's: test names (`R6-17 …`) with given / when / then, `// R6-17` branch comments, and error messages matching the requirements word for word.
-- If the approved design contradicts the convention during implementation, Claude stops and asks. Existing code that breaks the convention is reported, not rewritten.
+- If there is existing code, its current structure is always the first option.
+- When turning existing code into specs (adopt), Claude doesn't recommend anything; it records the current structure.
+
+**Each stage reads a different part.**
+
+| Stage | Reads | Examples |
+|---|---|---|
+| Design | design rules only | structure, naming, errors and error responses, validation, transactions, test kinds |
+| Implementation (implement, sync) | everything | the above plus code style, logging, how to write tests, commit rules |
+
+The design records which rules it followed (design 01's `따른 convention` table).
+
+**When the convention conflicts with spec-mirror**, only the three things that link spec and code stay spec-mirror's; everything else follows the convention.
+
+- Test names such as `R6-17 결제사가 주문과 같은 내용으로 승인하면 결제가 완료된다`, with given / when / then bodies
+- Branch comments such as `// R6-17`
+- Error messages matching the requirements word for word
+
+**When something differs from the convention**
+
+- The approved design differs from the convention (found during implementation) → Claude stops and asks whether to change the design.
+- Existing code differs from the convention → only the code being changed follows the convention; the rest is reported, not rewritten.
 
 Example: [examples/convention/](examples/convention/) (Spring backend, 3 layer + DDD).
 
@@ -124,11 +149,11 @@ Example: [examples/convention/](examples/convention/) (Spring backend, 3 layer +
 - **The format is checked automatically** on every save, and Claude fixes errors right away.
 - **A separate reviewer agent** reads each stage independently. Its findings, and what was done with them, are shown when Claude asks for approval.
 - **Each step in a requirement's flow is color-coded**: 🟢 business flow (request · action · response), 🟠 validation, 🟣 external request. The legend sits right under the requirements heading, so you can read the business flow first by following 🟢, then the validations by following 🟠. The classification follows Cockburn's use-case step kinds.
-- **Existing terms come first.** Before writing requirements, terms in your **convention docs come first**, then other specs' glossaries and the code's entity and enum names; the same concept keeps the same name. If the code has `User`, the new spec says user (User), not member (Member). Terms use the business language people actually use. If requirements define terms the convention doesn't have, Claude asks whether to add or change them in the convention before starting design.
+- **Existing terms come first.** Before writing requirements, Claude checks the convention's terms first, then other specs' glossaries and the code's entity and enum names, and keeps the same name for the same concept. If the code has `User`, the new spec says user (User), not member (Member). Terms use the business language people actually use, not developer words.
 - **Code names follow the domain terms.** Glossary English names become class and variable names. The checker reports glossary terms missing from design's term ↔ code table and glossary state values missing from the code. Other naming style comes from your conventions.
-- **Architecture follows your conventions.** 3 layer or DDD, design and code follow your convention docs. See [Following your team's conventions](#following-your-teams-conventions).
+- **Architecture follows your conventions.** 3 layer or DDD, design and code follow your conventions. If there are none, Claude recommends a structure that fits the project's size ([Following your team's conventions](#following-your-teams-conventions)).
 - **Requirements are written in natural Korean by default** (`# 요구사항`, `## 개요`, `**사용자 이야기:**` …). The English frame (`# Requirements Document`, `## Introduction`, `**User Story:** As a …`) is still accepted, so existing documents keep passing the checks.
-- **Spec and code are linked by number.** One criterion maps to test scenarios (`R1-2 …`) and one code branch (`// R1-2`). `/spec-mirror:sync` finds the gaps.
+- **Spec and code are linked by number.** Each criterion links to test scenarios (`R1-2 …`) and one code branch (`// R1-2`). `/spec-mirror:sync` finds the gaps.
 - **Tests are BDD scenarios.** Names read as "<situation> then <outcome>" sentences in domain language (e.g. `R6-17 결제사가 주문과 같은 내용으로 승인하면 결제가 완료된다`), bodies are given / when / then. Tests state the policy, not observed details like status codes; those checks live in test support code. Boundary values with the same outcome are examples of one scenario.
 - **No criterion goes untested.** design 05 maps every criterion to the test that checks it, and every error has at least one scenario checking the response the user actually gets. Test kinds (unit, integration, E2E …) come from your conventions.
 
