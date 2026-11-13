@@ -210,7 +210,9 @@ Claude Code와 Node.js 18 이상이 필요합니다.
 - **형식을 자동으로 검사합니다.** 명세 문서를 저장할 때마다 검사하고, 틀린 곳은 Claude가 그 자리에서 고칩니다.
 - **리뷰어가 따로 봅니다.** 단계마다 별도의 리뷰 에이전트가 문서를 다시 읽고 빠진 것을 찾습니다. 승인을 요청할 때 무엇을 지적받았고 어떻게 처리했는지 함께 보여 줍니다.
 - **규모에 맞게 설계합니다.** design은 DDD를 따르되, 기능의 설계 규모(작음 · 보통 · 큼)에 맞는 도구만 씁니다. 작은 기능을 과하게 나누면 검사기가 경고하고 리뷰어가 지적합니다.
-- **코드 이름은 도메인 용어를 따릅니다.** 요구사항 용어의 영문 이름이 클래스 · 변수 이름이 되고, 상태를 바꾸는 메서드는 `cancel()`, `expire()`처럼 행위 이름으로 짓습니다. design의 "도메인 용어 ↔ 코드" 표에 빠진 용어가 있거나 용어의 상태 값이 코드에 없으면 검사기가 알려 줍니다.
+- **이미 쓰는 용어를 그대로 씁니다.** 요구사항을 쓰기 전에 다른 명세의 용어와 코드의 엔티티 · enum 이름을 찾아, 같은 개념이면 그 이름을 씁니다. 코드에 `User`가 있으면 새 문서에서도 회원(Member)이 아니라 사용자(User)입니다. 용어와 문장은 개발자 말이 아니라 현업에서 쓰는 비즈니스 말로 씁니다.
+- **코드 이름은 도메인 용어를 따릅니다.** 요구사항 용어의 영문 이름이 클래스 · 변수 이름이 되고, 상태를 바꾸는 메서드는 `cancel()`, `expire()`처럼 행위 이름으로 짓습니다. design의 "도메인 용어 ↔ 코드" 표에 빠진 용어가 있거나 용어의 상태 값이 코드에 없으면 검사기가 알려 줍니다. `…Request` · `…Response` · `…Command` · `…Result` 같은 관례 접미사는 그대로 씁니다.
+- **검증은 두 곳으로 나눕니다.** 필수 값 · 길이 · 범위 · 형식처럼 요청만 보고 알 수 있는 검증은 Controller에서 Bean Validation 표준 어노테이션(`@NotBlank`, `@Size`, `@Min`, `@Pattern` 등)으로 하고, 존재 여부 · 상태 · 한도 같은 비즈니스 검증은 Application Service · 도메인에서 합니다.
 - **명세와 코드를 번호로 잇습니다.** 요구사항의 기준 하나가 테스트 하나(`R1-2 …`)와 코드 분기 하나(`// R1-2`)로 이어집니다. `/spec-mirror:sync`가 빠진 것을 찾아 줍니다.
 - **승인 뒤에 문서를 고치면** 다시 승인받아야 다음 단계로 갈 수 있습니다.
 
@@ -250,7 +252,7 @@ docs/spec/
 |---|---|
 | 요구사항 쓰는 법 | [rules/feature/requirements-format.md](rules/feature/requirements-format.md) |
 | 설계 · 태스크 쓰는 법 | [rules/feature/](rules/feature/) |
-| 설계 규모 · DDD · 이름 짓기 | [rules/feature/design-format.md](rules/feature/design-format.md) |
+| 설계 규모 · DDD · 이름 짓기 · 검증 위치 | [rules/feature/design-format.md](rules/feature/design-format.md) |
 | 버그 명세 쓰는 법 | [rules/bugfix/](rules/bugfix/) |
 | 기존 코드 옮기기 · 명세 지도 | [rules/adopt.md](rules/adopt.md), [rules/spec-map.md](rules/spec-map.md) |
 | 테스트 이름 · 코드 주석 규칙 | [rules/traceability.md](rules/traceability.md) |

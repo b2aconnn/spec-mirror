@@ -82,9 +82,10 @@
     - 요청 금액 무시, PG 호출 없음, 가격 변경 후 금액 불변
     - _Requirements: 1.1 ~ 1.17_
 
-  - [ ] 6.2 OrderRequestItems, IdempotencyKey 구현 (Value Object)
-    - 만들 때 상품 개수 → 수량 → 중복 상품 순서로 확인
-    - 중복 주문 방지 키 형식 확인
+  - [ ] 6.2 요청 검증 구현 (PlaceOrderRequest, OrderController, OrderRequestValidationHandler)
+    - 상품 개수 `@NotEmpty` · `@Size`, 수량 `@Min` · `@Max`, 중복 상품 `@UniqueProductIds`
+    - 중복 주문 방지 키 `@NotNull` · `@Pattern`
+    - 여러 위반이면 상품 개수 → 수량 → 중복 상품 → 키 순서상 앞선 하나만 응답
     - _Requirements: 1.2, 1.3, 1.4, 2.1_
 
   - [ ] 6.3 OrderLines, OrderDraft 구현

@@ -19,9 +19,9 @@
 
 | Value Object | 지키는 규칙 | 위치 |
 |---|---|---|
-| `OrderRequestItems` | 상품 개수 · 수량 · 중복 상품 (1.2 → 1.3 → 1.4) | [컴포넌트 2](02-components.md) |
-| `IdempotencyKey` | 키 형식 (2.1) | [컴포넌트 2](02-components.md) |
 | `OrderLines` | 판매가로 금액 계산, 금액 한도 (1.9, 1.10) | [컴포넌트 5](02-components.md) |
+
+요청만 보고 알 수 있는 기준(상품 개수 · 수량 · 중복 상품 1.2 → 1.3 → 1.4, 키 형식 2.1)은 Value Object가 아니라 요청 DTO의 어노테이션으로 확인합니다([컴포넌트 1](02-components.md)).
 
 ### Domain Entities
 
@@ -180,14 +180,53 @@ interface PaymentRepository : JpaRepository<Payment, Long> {
 
 #### Place Order Request DTO
 
+요청 검증 어노테이션의 `message`는 에러 코드입니다. 메시지 문구는 [에러 처리](04-error-handling.md)의 에러 코드 정의에서 가져옵니다.
+
 ```kotlin
 data class PlaceOrderRequest(
+    // R1-2
+    @field:NotEmpty(message = "INVALID_ORDER_ITEM_COUNT")
+    @field:Size(max = 20, message = "INVALID_ORDER_ITEM_COUNT")
+    // R1-4
+    @field:UniqueProductIds
+    @field:Valid
     val items: List<OrderItemRequest>? = null,   // 금액 필드 없음
-)
+) {
+    fun toCommand(memberId: Long, idempotencyKey: String) = PlaceOrderCommand(
+        memberId = memberId,
+        idempotencyKey = idempotencyKey,
+        items = items!!.map { OrderItemCommand(it.productId, it.quantity) },
+    )
+}
 
 data class OrderItemRequest(
     val productId: Long,
+    // R1-3
+    @field:Min(1, message = "INVALID_ORDER_QUANTITY")
+    @field:Max(99, message = "INVALID_ORDER_QUANTITY")
     val quantity: Int,
+)
+```
+
+#### Place Order Command / Result
+
+Order Place Service의 입력과 출력입니다. Command는 요청 검증을 통과한 값만 담습니다.
+
+```kotlin
+data class PlaceOrderCommand(
+    val memberId: Long,
+    val idempotencyKey: String,
+    val items: List<OrderItemCommand>,
+)
+
+data class OrderItemCommand(
+    val productId: Long,
+    val quantity: Int,
+)
+
+data class PlaceOrderResult(
+    val order: OrderResponse,
+    val created: Boolean,   // true: 새로 접수(201), false: 같은 키 · 같은 내용 재요청(200)
 )
 ```
 

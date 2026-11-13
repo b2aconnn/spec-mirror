@@ -2,6 +2,18 @@
 
 이 프로젝트의 변경 이력입니다. 버전은 [Semantic Versioning](https://semver.org/)을 따릅니다.
 
+## [0.8.0] - 2026-11-13
+
+### 추가
+- requirements "용어 정하기": 용어는 새로 짓기 전에 다른 명세의 Glossary, 코드의 엔티티 · enum, 기존 메시지에서 찾아 같은 개념이면 그 이름을 씀 (예: 코드에 `User`가 있으면 회원(Member)이 아니라 사용자(User)). 영문 표기는 코드 이름 그대로, 한글 용어는 현업에서 쓰는 비즈니스 말. 개발자 말(레코드, 플래그, 엔티티)은 쓰지 않음
+- spec · adopt · bugfix 작성 안내에 용어 찾기 단계, 보고에 용어 출처. 작성 후 점검 · 리뷰어에 용어 항목
+- design "검증 위치": 요청만 보고 알 수 있는 검증은 Controller에서 Bean Validation 표준 어노테이션(`@NotNull` · `@NotBlank` · `@NotEmpty` · `@Size` · `@Min` · `@Max` · `@Pattern` · `@Email` …)으로, 비즈니스 검증은 Application Service · Aggregate · Domain Service에서. 커스텀 제약은 표준으로 안 될 때만. 여러 위반이면 requirements 순서상 앞선 하나만 응답
+- 04 템플릿 계층별 예외 처리를 요청 검증 / 비즈니스 검증으로 나눔. design · implement 안내와 리뷰어에 검증 위치 반영
+
+### 변경
+- design "이름 짓기": 기존 코드에 같은 개념의 이름이 있으면 그 이름. 관례 접미사 `…Request` · `…Response` · `…Command` · `…Result` · `…Query` 명시. design 본문도 비즈니스 용어로
+- 예제 order: 요청 값 Value Object(`OrderRequestItems`, `IdempotencyKey`)를 없애고 Order Controller의 Bean Validation(`PlaceOrderRequest` 어노테이션, `@UniqueProductIds`, `OrderRequestValidationHandler`)으로 옮김. 페이지 요청 확인(4.2)도 Controller로
+
 ## [0.6.0] - 2026-11-12
 
 ### 변경

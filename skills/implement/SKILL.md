@@ -54,6 +54,7 @@ allowed-tools: Bash(node *spec-mirror.mjs* gate*), Bash(node *spec-mirror.mjs* n
      - design 02의 인터페이스대로 구현합니다.
      - 처리 흐름 기준은 분기 바로 위에 `R{N}-{M}` 주석을 **번호 순서대로** 답니다. 항상 지켜야 할 규칙은 보장 위치에 답니다.
      - 에러 메시지는 requirements와 글자까지 같게 씁니다.
+     - 검증은 design 규칙의 "검증 위치"대로 둡니다. 요청 검증 기준은 요청 DTO · 파라미터의 Bean Validation 표준 어노테이션으로 쓰고 `R{N}-{M}` 주석은 그 어노테이션 바로 위에 답니다. 비즈니스 검증은 Application Service · Aggregate · Domain Service에 둡니다.
      - 이름은 표와 같게 씁니다. 상태 값은 Glossary의 `ENUM` 그대로이고, 상태를 바꾸는 메서드는 `cancel()`처럼 행위 이름입니다. `setStatus`, `process…`, `…Manager`처럼 뜻이 흐린 이름은 쓰지 않습니다.
      - 관련 테스트를 실행해 **통과를 확인합니다 (Green).**
 

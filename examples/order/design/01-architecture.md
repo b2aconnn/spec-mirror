@@ -17,7 +17,7 @@
 | 응답 뒤 처리 | 결제 기한 만료 배치 (Requirement 8), 대사 결과 반영 (7.7) | 큼 |
 | 동시에 겹치는 요청 | 승인 · 취소 · 만료가 겹쳐도 하나만 반영 (9.3), 같은 키 동시 요청 (2.8) | 큼 |
 
-- **쓰는 것**: Aggregate 2개(주문, 결제), 요청 값과 금액 계산의 Value Object, 상품 카탈로그 포트 + 어댑터(외부 응답을 `CatalogProduct`로 번역)
+- **쓰는 것**: Aggregate 2개(주문, 결제), 금액 계산의 Value Object, 요청 검증은 Controller의 Bean Validation 어노테이션, 상품 카탈로그 포트 + 어댑터(외부 응답을 `CatalogProduct`로 번역)
 - **쓰지 않는 것**: Domain Event. 주문 상태는 결제 상태와 한 트랜잭션에서 함께 바뀌어야 하므로(9.2) 이벤트로 나누지 않고, Order Payment Synchronizer가 결제 트랜잭션 안에서 반영합니다.
 - **기존 구조를 따르는 것**: 상태 변경은 기존 `Payment`와 같이 Repository 조건부 UPDATE로 합니다(9.3). 어떤 전이가 가능한지는 `OrderStatus`가 정합니다.
 

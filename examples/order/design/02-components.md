@@ -4,11 +4,90 @@
 
 ## Components and Interfaces
 
-### 1. Order Place Service
+### 1. Order Controller
 
-주문 접수의 핵심 흐름을 담당합니다. 상품 카탈로그 호출을 트랜잭션 밖에 두기 위해 이 클래스 자체에는 `@Transactional`을 붙이지 않습니다.
+주문 API의 진입점입니다. **요청만 보고 알 수 있는 기준**(1.2 → 1.3 → 1.4, 2.1, 4.2)을 요청 DTO · 헤더 · 파라미터의 Bean Validation 어노테이션으로 확인하고, 통과한 요청만 Command로 바꿔 서비스에 넘깁니다.
 
-**역할:** Application Service — 주문 접수의 진입점. 순서만 조율하고 규칙은 Value Object와 Aggregate에 둡니다
+**역할:** 진입점 (Controller) — 분리 조건 5. 요청 검증만 하고, 저장된 것이나 상태를 보는 확인은 하지 않습니다
+
+```kotlin
+@RestController
+@RequestMapping("/api/orders")
+@Validated
+class OrderController(
+    private val orderPlaceService: OrderPlaceService,
+    private val orderQueryService: OrderQueryService,
+    private val orderCancelService: OrderCancelService,
+) {
+    /**
+     * 주문 접수.
+     * 1. 주문 항목 (개수 → 수량 → 중복 상품) — PlaceOrderRequest의 어노테이션 (1.2 → 1.3 → 1.4)
+     * 2. 중복 주문 방지 키 형식 — Idempotency-Key 헤더의 어노테이션 (2.1)
+     * 여러 위반이 겹치면 OrderRequestValidationHandler가 위 순서상 앞선 하나만 응답합니다.
+     */
+    @PostMapping
+    fun place(
+        @RequestHeader("X-Member-Id") memberId: Long,
+        // R2-1
+        @RequestHeader("Idempotency-Key", required = false)
+        @NotNull(message = "INVALID_IDEMPOTENCY_KEY")
+        @Pattern(regexp = "^[A-Za-z0-9_-]{1,64}$", message = "INVALID_IDEMPOTENCY_KEY")
+        idempotencyKey: String?,
+        @Valid @RequestBody request: PlaceOrderRequest,
+    ): ResponseEntity<OrderResponse> {
+        val result = orderPlaceService.place(request.toCommand(memberId, idempotencyKey!!))
+        return ResponseEntity.status(if (result.created) HttpStatus.CREATED else HttpStatus.OK)
+            .body(result.order)
+    }
+
+    @GetMapping("/{orderId}")
+    fun getOrder(@RequestHeader("X-Member-Id") memberId: Long, @PathVariable orderId: String): OrderResponse =
+        orderQueryService.getOrder(memberId, orderId)
+
+    /** 주문 내역. 페이지 번호 · 크기 확인 (4.2) */
+    @GetMapping
+    fun getOrders(
+        @RequestHeader("X-Member-Id") memberId: Long,
+        // R4-2
+        @RequestParam(defaultValue = "0") @Min(0, message = "INVALID_PAGE_REQUEST") page: Int,
+        @RequestParam(defaultValue = "20") @Min(1, message = "INVALID_PAGE_REQUEST") size: Int,
+    ): OrderSliceResponse = orderQueryService.getOrders(memberId, page, size)
+
+    @PostMapping("/{orderId}/cancel")
+    fun cancel(@RequestHeader("X-Member-Id") memberId: Long, @PathVariable orderId: String): OrderResponse =
+        orderCancelService.cancel(memberId, orderId)
+}
+```
+
+요청 DTO의 어노테이션은 [데이터 모델](03-data-models.md)의 Place Order Request DTO에 있습니다. 같은 상품이 여러 항목에 있는지(1.4)는 표준 어노테이션으로 나타낼 수 없어서 커스텀 제약 `@UniqueProductIds` 하나만 둡니다.
+
+```kotlin
+@Target(AnnotationTarget.FIELD)
+@Retention(AnnotationRetention.RUNTIME)
+@Constraint(validatedBy = [UniqueProductIdsValidator::class])
+annotation class UniqueProductIds(
+    val message: String = "DUPLICATED_ORDER_ITEM",
+    val groups: Array<KClass<*>> = [],
+    val payload: Array<KClass<out Payload>> = [],
+)
+
+class UniqueProductIdsValidator : ConstraintValidator<UniqueProductIds, List<OrderItemRequest>?> {
+    override fun isValid(items: List<OrderItemRequest>?, context: ConstraintValidatorContext): Boolean =
+        items == null || items.map { it.productId }.toSet().size == items.size
+}
+```
+
+**구현 책임:**
+- 요청 검증은 표준 어노테이션(`@NotEmpty`, `@Size`, `@Min`, `@Max`, `@NotNull`, `@Pattern`)으로 하고, 어노테이션의 `message`에는 에러 코드를 적음
+- 여러 위반이 겹치면 처음 어긋난 하나만 응답. 순서는 [에러 처리](04-error-handling.md)의 `OrderRequestValidationHandler`가 정함
+- 요청에 금액이 들어 있어도 쓰지 않음 (요청 DTO에 금액 필드 자체가 없음)
+- 상품 존재 · 판매 여부, 중복 주문, 주문 상태 같은 비즈니스 확인은 하지 않음 (서비스와 Aggregate가 함)
+
+### 2. Order Place Service
+
+주문 접수의 핵심 흐름을 담당합니다. 요청 검증을 통과한 Command를 받습니다. 상품 카탈로그 호출을 트랜잭션 밖에 두기 위해 이 클래스 자체에는 `@Transactional`을 붙이지 않습니다.
+
+**역할:** Application Service — 주문 접수의 조율. 순서만 정하고 규칙은 Value Object와 Aggregate에 둡니다
 
 ```kotlin
 @Service
@@ -19,85 +98,36 @@ class OrderPlaceService(
     private val clock: Clock,
 ) {
     /**
-     * 주문을 접수합니다.
-     * 1. 주문 항목 검증 (개수 → 수량 → 중복 상품)
-     * 2. 중복 주문 방지 키 형식 검증
-     * 3. 같은 키로 접수된 주문 확인 → 있으면 기존 주문 반환
-     * 4. 상품 카탈로그 조회 (트랜잭션 밖)
-     * 5. 상품 존재 / 판매 여부 확인, 주문 금액 계산, 한도 확인
-     * 6. 주문번호·주문명·결제 기한 결정
-     * 7. 주문 + 주문 항목 + 결제 저장 (한 트랜잭션)
+     * 주문을 접수합니다. 주문 항목과 키 형식은 Controller에서 확인을 마쳤습니다 (1.2 ~ 1.4, 2.1).
+     * 1. 같은 키로 접수된 주문 확인 → 있으면 기존 주문 반환
+     * 2. 상품 카탈로그 조회 (트랜잭션 밖)
+     * 3. 상품 존재 / 판매 여부 확인, 주문 금액 계산, 한도 확인
+     * 4. 주문번호·주문명·결제 기한 결정
+     * 5. 주문 + 주문 항목 + 결제 저장 (한 트랜잭션)
      */
     fun place(command: PlaceOrderCommand): PlaceOrderResult {
-        val items = OrderRequestItems.of(command.items)
-        val key = IdempotencyKey.of(command.idempotencyKey)
-
-        val fingerprint = OrderFingerprint.of(items)
-        idempotencyService.findExisting(command.memberId, key.value, fingerprint)
+        val fingerprint = OrderFingerprint.of(command.items)
+        idempotencyService.findExisting(command.memberId, command.idempotencyKey, fingerprint)
             ?.let { return PlaceOrderResult.existing(it) }
 
-        val products = productCatalog.findProducts(items.productIds)
-        val lines = OrderLines.of(items, products)
+        val products = productCatalog.findProducts(command.items.map { it.productId })
+        val lines = OrderLines.of(command.items, products)
         val draft = OrderDraft.create(command, lines, fingerprint, clock.instant())
 
         return try {
             PlaceOrderResult.created(orderWriter.create(draft))
         } catch (e: DataIntegrityViolationException) {
             // 같은 키로 동시에 들어온 요청 중 늦은 쪽: 먼저 접수된 주문을 돌려준다
-            idempotencyService.resolveConcurrent(command.memberId, key.value, fingerprint)
+            idempotencyService.resolveConcurrent(command.memberId, command.idempotencyKey, fingerprint)
         }
     }
 }
 ```
 
 **구현 책임:**
-- 검증은 요구사항에 적힌 순서대로 하고, 처음 어긋난 하나만 응답 (Bean Validation `@Valid`는 여러 위반을 한꺼번에 모으므로 쓰지 않음)
-- 요청에 금액이 들어 있어도 쓰지 않음 (요청 DTO에 금액 필드 자체가 없음)
+- 비즈니스 확인은 요구사항에 적힌 순서대로 하고, 처음 어긋난 하나만 응답
 - 주문 접수 중에는 PG를 호출하지 않음
 - 상품 카탈로그 장애는 `PRODUCT_CATALOG_UNAVAILABLE`로 변환
-
-### 2. Order Request Items / Idempotency Key
-
-주문 요청의 항목과 중복 주문 방지 키입니다. 만들어질 때 규칙을 확인하므로, 만들어진 값은 항상 올바릅니다.
-
-**역할:** Value Object — 분리 조건 4. 요청 값의 규칙(1.2 → 1.3 → 1.4, 2.1)을 값 자체가 지킵니다. 별도 Validator를 두지 않습니다
-
-```kotlin
-class OrderRequestItems private constructor(val values: List<OrderItemCommand>) {
-
-    val productIds: List<Long> get() = values.map { it.productId }
-
-    companion object {
-        private const val MAX_ITEMS = 20
-        private val QUANTITY_RANGE = 1..99
-
-        /** 개수 → 수량 → 중복 상품 순서로 확인하고, 처음 어긋난 하나만 알립니다. */
-        fun of(items: List<OrderItemCommand>?): OrderRequestItems {
-            if (items.isNullOrEmpty() || items.size > MAX_ITEMS) {
-                throw OrderException(OrderErrorCode.INVALID_ORDER_ITEM_COUNT)
-            }
-            if (items.any { it.quantity !in QUANTITY_RANGE }) {
-                throw OrderException(OrderErrorCode.INVALID_ORDER_QUANTITY)
-            }
-            if (items.map { it.productId }.toSet().size != items.size) {
-                throw OrderException(OrderErrorCode.DUPLICATED_ORDER_ITEM)
-            }
-            return OrderRequestItems(items)
-        }
-    }
-}
-
-@JvmInline
-value class IdempotencyKey private constructor(val value: String) {
-    companion object {
-        private val PATTERN = Regex("^[A-Za-z0-9_-]{1,64}$")
-
-        fun of(key: String?): IdempotencyKey =
-            if (key != null && PATTERN.matches(key)) IdempotencyKey(key)
-            else throw OrderException(OrderErrorCode.INVALID_IDEMPOTENCY_KEY)
-    }
-}
-```
 
 ### 3. Order Idempotency Service
 
@@ -155,8 +185,8 @@ class OrderIdempotencyService(
 ```kotlin
 object OrderFingerprint {
     /** 상품 ID 오름차순으로 정렬한 "상품ID:수량" 목록의 SHA-256 */
-    fun of(items: OrderRequestItems): String =
-        items.values.sortedBy { it.productId }
+    fun of(items: List<OrderItemCommand>): String =
+        items.sortedBy { it.productId }
             .joinToString(",") { "${it.productId}:${it.quantity}" }
             .sha256Hex()
 }
@@ -224,8 +254,7 @@ object OrderLines {
      * 3. 항목 금액 = 판매가 × 수량, 주문 금액 = 항목 금액의 합
      * 4. 주문 금액 10,000,000원 초과 → ORDER_AMOUNT_LIMIT_EXCEEDED
      */
-    fun of(request: OrderRequestItems, products: Map<Long, CatalogProduct>): OrderLines {
-        val items = request.values
+    fun of(items: List<OrderItemCommand>, products: Map<Long, CatalogProduct>): OrderLines {
         items.firstOrNull { it.productId !in products }?.let {
             throw OrderException(OrderErrorCode.PRODUCT_NOT_FOUND, it.productId.toString())
         }
@@ -326,10 +355,9 @@ class OrderQueryService(
     /**
      * 본인 주문 내역을 최근 주문부터 페이지 단위로 조회합니다.
      * 페이지 크기는 기본 20건, 50건보다 크게 요청하면 50건만 보여줍니다.
+     * 페이지 번호 · 크기의 형식(4.2)은 Controller에서 확인을 마쳤습니다.
      */
     fun getOrders(memberId: Long, page: Int, size: Int): OrderSliceResponse {
-        if (page < 0 || size < 1) throw OrderException(OrderErrorCode.INVALID_PAGE_REQUEST)
-
         val pageable = PageRequest.of(page, minOf(size, MAX_PAGE_SIZE),
             Sort.by(Sort.Direction.DESC, "createdAt", "id"))
         val slice = orderRepository.findByMemberId(memberId, pageable)

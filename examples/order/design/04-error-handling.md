@@ -8,12 +8,16 @@
 
 #### 1. 계층별 예외 처리
 
-**Controller Layer:**
-- `OrderExceptionHandler`(신규)와 `PaymentExceptionHandler`(기존)가 예외를 `ErrorResponse`로 변환
-- 요청 형식 오류(헤더 누락, JSON 파싱 불가)는 기존 핸들러가 `400 INVALID_REQUEST`로 처리
+**Controller Layer (요청 검증):**
+- 요청만 보고 알 수 있는 기준은 Bean Validation 어노테이션으로 확인
+  - 주문 항목 개수 `@NotEmpty` · `@Size(max = 20)` (1.2), 수량 `@Min(1)` · `@Max(99)` (1.3), 중복 상품 `@UniqueProductIds` (1.4)
+  - 중복 주문 방지 키 `@NotNull` · `@Pattern` (2.1), 페이지 번호 · 크기 `@Min` (4.2)
+- 어노테이션 위반은 `OrderRequestValidationHandler`가 에러 코드로 바꿔 응답. 여러 위반이 겹치면 기준 순서(1.2 → 1.3 → 1.4 → 2.1)상 앞선 하나만 응답
+- `OrderExceptionHandler`(신규)와 `PaymentExceptionHandler`(기존)가 비즈니스 예외를 `ErrorResponse`로 변환
+- 요청 형식 오류(회원 헤더 누락, JSON 파싱 불가)는 기존 핸들러가 `400 INVALID_REQUEST`로 처리
 
-**Service Layer:**
-- 비즈니스 규칙 위반은 `OrderException` / `PaymentException`에 에러 코드를 담아 던짐
+**Service · Domain Layer (비즈니스 검증):**
+- 상품 존재 · 판매 여부 · 금액 한도(`OrderLines`), 중복 주문(`OrderIdempotencyService`), 주문 상태(`OrderStatus`) 같은 규칙 위반은 `OrderException` / `PaymentException`에 에러 코드를 담아 던짐
 - 동시성 충돌(조건부 UPDATE 0행)은 정해진 에러 코드로 변환하거나 건너뜀
 
 **Adapter Layer:**
@@ -67,6 +71,35 @@ class OrderExceptionHandler {
     fun handle(e: OrderException): ResponseEntity<ErrorResponse> =
         ResponseEntity.status(e.errorCode.status)
             .body(ErrorResponse(e.errorCode.name, e.message ?: e.errorCode.defaultMessage))
+}
+```
+
+요청 검증 위반은 따로 받습니다. 어노테이션의 `message`가 에러 코드이고, 여러 개면 기준 순서상 앞선 것 하나를 고릅니다.
+
+```kotlin
+@RestControllerAdvice(assignableTypes = [OrderController::class])
+class OrderRequestValidationHandler {
+
+    /** requirements 처리 흐름 순서. 여러 위반이 겹치면 이 목록에서 앞선 하나만 응답합니다. */
+    private val checkOrder = listOf(
+        OrderErrorCode.INVALID_ORDER_ITEM_COUNT,   // 1.2
+        OrderErrorCode.INVALID_ORDER_QUANTITY,     // 1.3
+        OrderErrorCode.DUPLICATED_ORDER_ITEM,      // 1.4
+        OrderErrorCode.INVALID_IDEMPOTENCY_KEY,    // 2.1
+        OrderErrorCode.INVALID_PAGE_REQUEST,       // 4.2
+    )
+
+    @ExceptionHandler(MethodArgumentNotValidException::class)
+    fun handle(e: MethodArgumentNotValidException) = respond(e.bindingResult.allErrors.mapNotNull { it.defaultMessage })
+
+    @ExceptionHandler(HandlerMethodValidationException::class)
+    fun handle(e: HandlerMethodValidationException) = respond(e.allErrors.mapNotNull { it.defaultMessage })
+
+    private fun respond(codes: List<String>): ResponseEntity<ErrorResponse> {
+        val errorCode = checkOrder.first { it.name in codes }
+        return ResponseEntity.status(errorCode.status)
+            .body(ErrorResponse(errorCode.name, errorCode.defaultMessage))
+    }
 }
 ```
 

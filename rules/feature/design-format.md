@@ -84,7 +84,7 @@ requirements를 읽고 신호마다 해당하는 칸을 고릅니다. **가장 �
 
 다음은 만들지 않습니다.
 
-- 한 흐름에서만 쓰는 검증 몇 줄을 위한 Validator. Aggregate나 서비스 메서드 안에 둡니다.
+- 한 흐름에서만 쓰는 검증 몇 줄을 위한 Validator 클래스. 요청 검증은 요청 DTO의 어노테이션으로, 비즈니스 검증은 Aggregate나 서비스 메서드 안에 둡니다([검증 위치](#검증-위치)).
 - 구현이 하나뿐이고 테스트에서 대체하지 않는 내부 클래스의 인터페이스
 - 호출을 그대로 넘기기만 하는 계층 (Facade, Manager, Helper)
 - 조회만 하는 흐름을 위해 Aggregate를 거치는 경로. 조회는 조회용 쿼리로 바로 읽어도 됩니다
@@ -92,22 +92,56 @@ requirements를 읽고 신호마다 해당하는 칸을 고릅니다. **가장 �
 
 ## 이름 짓기
 
-코드의 이름은 **requirements의 말**에서 옵니다. 코드를 읽는 사람이 requirements의 Glossary와 기준 문장을 떠올릴 수 있어야 합니다. design 03의 `### 도메인 용어 ↔ 코드` 표가 그 대응표이고, implement는 이 표대로 이름을 짓습니다.
+코드의 이름은 **requirements의 말**에서 옵니다. 코드를 읽는 사람이 requirements의 Glossary와 기준 문장을 떠올릴 수 있어야 합니다. design 03의 `### 도메인 용어 ↔ 코드` 표가 그 대응표이고, implement는 이 표대로 이름을 짓습니다. design 본문(컴포넌트 설명, 구현 책임, 표)도 기술 용어보다 **비즈니스 용어**로 씁니다. 예: "레코드를 갱신" 대신 "주문을 취소 상태로 바꿈".
 
 1. **도메인 개념은 Glossary 영문 표기를 씁니다.** 클래스, 필드, 변수, 매개변수 모두 같습니다. 예: 주문 (Order) → `Order`, `orderId`. 결제 기한 (Expires At) → `expiresAt`.
    - 같은 개념은 어디서나 같은 이름입니다. 동의어를 섞지 않습니다(예: `order`와 `purchase`).
+   - **기존 코드에 같은 개념의 이름이 있으면 그 이름을 씁니다.** 예: 기존 `User`가 있으면 새 코드에서 `Member`를 만들지 않습니다. requirements Glossary가 이미 기존 이름을 따르므로, 둘이 다르면 requirements 보완 필요로 보고합니다.
    - Glossary에 없는 도메인 개념에 이름이 필요하면 코드에서 지어내지 않습니다. "requirements 보완 필요"로 보고하고 Glossary에 먼저 넣습니다.
 2. **상태 값은 Glossary의 `ENUM` 값 그대로**입니다. 예: 결제 대기 (`PENDING_PAYMENT`) → `OrderStatus.PENDING_PAYMENT`
 3. **상태를 바꾸는 메서드는 도메인 행위 이름**입니다. 기준 문장의 동사나 도착 상태에서 가져옵니다. 예: `cancel()`, `expire()`, `markPaid()`
    - `setStatus(to)`, `changeStatus(to)`, `update(...)`처럼 어떤 전이인지 숨기는 메서드를 바깥에 두지 않습니다.
    - 조건부 갱신처럼 저장 계층에서 하나로 묶어야 하면 그 메서드는 저장 계층이나 `private`에만 두고, 바깥에는 행위 이름으로 감쌉니다.
 4. **유스케이스 메서드는 첫 기준의 행위 이름**입니다. "회원은 ~할 수 있다"의 동사를 씁니다. 예: 주문 접수 → `place`, 찜하기 → `add`, 주문 취소 → `cancel`
-5. **기술 역할 접미사는 프로젝트 관례대로** 씁니다(`Repository`, `Controller`, `Adapter`, `Scheduler`, `Exception`). 앞부분은 도메인 용어입니다. 예: `OrderRepository`
+5. **기술 역할 접미사는 관례 이름을 씁니다.** 앞부분은 도메인 용어입니다. 프로젝트에 정해진 관례가 있으면 그것을 따릅니다.
+   - 계층 · 역할: `…Controller`, `…Service`, `…Repository`, `…Adapter`, `…Scheduler`, `…Exception`, `…ErrorCode`
+   - 데이터 전달: `…Request` · `…Response`(Controller의 요청 · 응답), `…Command` · `…Result`(Application Service의 입력 · 출력), `…Query`(조회 조건)
+   - 예: `OrderRepository`, `PlaceOrderRequest` → `PlaceOrderCommand` → `PlaceOrderResult` → `OrderResponse`
+   - 접미사 앞에 기술 말을 넣지 않습니다. ❌ `OrderRecordDto`, `OrderEntityRequest` → ✅ `OrderResponse`
 6. **뜻이 흐린 이름은 쓰지 않습니다.**
    - 클래스: `…Manager`, `…Helper`, `…Util`, `…Processor`, `…Info`, `…Data`
    - 메서드: `process…`, `handle…`, `do…`, `execute`, `run` (프레임워크가 정한 이름은 예외)
    - 변수: `data`, `info`, `temp`, `result`, `obj`처럼 무엇인지 말하지 않는 이름
 7. **03 표에 이름을 모두 적습니다.** Glossary 용어마다 코드 이름을 적고, 상태 묶음은 enum 이름을, 상태 전이는 행위 메서드를 적습니다. 새 이름이 생기면 표를 먼저 고칩니다.
+
+## 검증 위치
+
+검증은 **무엇을 보고 판단하는지**에 따라 두 곳으로 나눕니다. requirements의 [확인 순서 표](requirements-format.md#처리-흐름의-순서-정하기)에서 "요청 형식"까지는 요청 검증, 그 뒤는 비즈니스 검증입니다.
+
+| 구분 | 무엇을 보는가 | 위치 | 방법 |
+|---|---|---|---|
+| 요청 검증 | 요청만 보고 알 수 있는 것: 필수 값, 길이, 개수, 숫자 범위, 형식(패턴 · 이메일 · 날짜) | Controller 계층 (요청 DTO, 요청 파라미터 · 헤더) | Bean Validation 어노테이션 |
+| 비즈니스 검증 | 저장된 것 · 상태 · 외부 정보 · 여러 값의 관계가 필요한 것: 존재 여부, 본인 것인지, 상태, 한도, 기한, 중복 요청 | Application Service · Aggregate · Value Object · Domain Service | 코드 (에러 코드를 담은 예외) |
+
+**요청 검증 (Controller)**
+
+- Spring 기준으로 **현업에서 많이 쓰는 표준 어노테이션을 먼저** 씁니다.
+  - 값 있음: `@NotNull`, `@NotBlank`(문자열), `@NotEmpty`(목록)
+  - 길이 · 개수: `@Size(min, max)`
+  - 숫자: `@Min`, `@Max`, `@Positive`, `@PositiveOrZero`, `@DecimalMin`, `@DecimalMax`
+  - 형식: `@Pattern`, `@Email`
+  - 날짜: `@Past`, `@PastOrPresent`, `@Future`, `@FutureOrPresent`
+  - 적용: 요청 본문은 `@Valid @RequestBody`, 목록 안의 객체는 `@Valid`, 파라미터 · 헤더는 Controller에 `@Validated`
+- 표준 어노테이션으로 나타낼 수 없을 때만 커스텀 제약(`@Constraint` + `ConstraintValidator`)을 만듭니다. 예: 목록 안 상품 ID가 겹치지 않음. 커스텀 제약도 요청만 보고 판단하는 것이어야 합니다. 저장소 조회가 필요하면 비즈니스 검증입니다.
+- 어노테이션의 `message`에는 requirements의 **에러 코드**를 적고, 예외 핸들러(`@RestControllerAdvice`)가 `MethodArgumentNotValidException` · `HandlerMethodValidationException`(파라미터 · 헤더)을 그 에러 코드의 상태 · 메시지로 바꿉니다. 메시지는 requirements와 글자까지 같습니다.
+- **여러 위반이 겹치면 requirements 순서상 앞선 하나만 응답합니다.** Bean Validation은 위반을 모두 모으므로, 핸들러가 기준 순서대로 정한 에러 코드 목록에서 가장 앞선 것을 고릅니다(또는 `@GroupSequence`로 순서를 정합니다). 이 순서를 02의 Controller 컴포넌트에 씁니다.
+- 프로젝트가 Spring이 아니면 그 프레임워크에서 같은 역할을 하는 표준 방식을 씁니다. 기존 코드가 다른 방식으로 요청을 검증하고 있으면 그 방식을 따르고, 01에 근거를 씁니다.
+
+**비즈니스 검증 (Application Service · Domain)**
+
+- 규모가 작음이면 서비스 메서드 안에 흐름 순서대로 둡니다.
+- 규모가 보통 이상이면 불변식과 상태 전이 조건은 Aggregate · Value Object가 지키고, 조회가 필요한 확인(존재, 본인 것, 중복 요청)은 Application Service가 불러오면서 합니다. 여러 Aggregate나 외부 정보를 함께 봐야 하는 확인만 Domain Service에 둡니다.
+- Controller에서 저장소를 조회하거나 상태를 확인하지 않습니다. 반대로 요청 형식 확인을 서비스로 미루지 않습니다.
 
 ## design.md (목차)
 
@@ -261,6 +295,7 @@ requirements를 읽고 신호마다 해당하는 칸을 고릅니다. **가장 �
 #### 4. 로깅 전략
 ```
 
+- `#### 1. 계층별 예외 처리`에는 Controller 계층의 요청 검증(어떤 기준을 어떤 어노테이션으로, 여러 위반일 때 고르는 순서)과 Service · Domain 계층의 비즈니스 검증을 나눠 씁니다([검증 위치](#검증-위치)).
 - 에러 코드 정의의 메시지는 requirements `메시지:`와 **글자까지 같아야** 합니다. 자리표시자(`{상품 ID}`)를 어떻게 채우는지 함께 씁니다.
 - 로깅 전략 표에는 requirements `로그:` 항목을 모두 옮깁니다.
 
