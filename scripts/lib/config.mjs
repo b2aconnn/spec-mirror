@@ -14,6 +14,7 @@ export const DEFAULT_CONFIG = {
   stageGate: true,
   techContext: ['CLAUDE.md', 'README.md'],
   conventionDir: 'docs/convention',
+  conventionFiles: ['convention.md', '*-convention.md'],
   extraItemLabels: [],
   testPathPatterns: [
     '(^|/)(test|tests|__tests__|spec|specs)/',

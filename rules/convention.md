@@ -4,8 +4,16 @@ spec-mirror는 **명세를 쓰고, 명세와 테스트 · 코드를 잇는 일**
 
 ## 위치
 
-- 설정 `conventionDir`입니다. 기본은 `docs/convention`이고, 설정에 다른 경로를 적으면 그 경로입니다.
-- 검사기의 `convention` 명령(스킬에서는 `SM convention`)으로 문서 목록을 봅니다. 하위 폴더까지 모든 문서를 읽습니다.
+두 곳에서 찾고, 찾은 문서를 모두 읽습니다.
+
+| 설정 | 기본값 | 찾는 것 |
+|---|---|---|
+| `conventionDir` | `docs/convention` | 그 폴더 안의 모든 파일 (하위 폴더까지) |
+| `conventionFiles` | `convention.md`, `*-convention.md` | 프로젝트 어디서든 이 이름의 파일. 예: `convention.md`, `project-convention.md`, `backend-convention.md`. `*`는 아무 글자, 대소문자 무시 |
+
+- `ignoreDirs`(`node_modules`, `build` 등)와 `.`으로 시작하는 폴더 · 파일은 찾지 않습니다.
+- 검사기의 `convention` 명령(스킬에서는 `SM convention`)으로 찾은 문서 목록을 봅니다.
+- 한쪽만 쓰려면 `conventionDir`을 `""`로, 또는 `conventionFiles`를 `[]`로 둡니다.
 
 ## 있을 때
 
@@ -13,7 +21,7 @@ spec-mirror는 **명세를 쓰고, 명세와 테스트 · 코드를 잇는 일**
 
 ## 없을 때
 
-convention 폴더가 없거나 비어 있으면, 설계나 구현을 시작하기 전에 **만듭니다**. `init`, design(기능 · 버그 · adopt), implement 중 먼저 오는 곳에서 한 번 합니다.
+찾은 convention 문서가 하나도 없으면, 설계나 구현을 시작하기 전에 **만듭니다**. 만드는 곳은 `conventionDir`입니다. `init`, design(기능 · 버그 · adopt), implement 중 먼저 오는 곳에서 한 번 합니다.
 
 1. **무엇을 만드는 프로젝트인지 봅니다.** 빌드 파일, 소스 트리, 기존 코드로 백엔드 · 프론트엔드 · 둘 다 · 그 밖(모바일, 배치, 라이브러리)을 가립니다.
 2. **기존 코드가 있으면 지금 구조를 먼저 읽습니다.** 계층 · 모듈, 이름, 검증 · 예외 처리, 테스트 도구 · 종류를 코드에서 찾습니다.
@@ -53,6 +61,22 @@ convention 폴더가 없거나 비어 있으면, 설계나 구현을 시작하�
 | `testing.md` | 테스트 종류(예: 유닛 · 통합 · E2E)와 각각 무엇을 확인하는지, 도구, 테스트 위치 · 묶음, 가짜 구현 · 고정 시계 |
 
 프로젝트에 필요한 문서를 더 둘 수 있습니다. spec-mirror의 추적 규칙(아래 우선순위 1)은 convention에 옮겨 적지 않습니다.
+
+## 용어
+
+convention 문서에 용어(용어집, Glossary, 용어 표 등)가 있으면 **그 용어가 가장 우선**합니다. requirements의 Glossary는 convention 용어를 그대로 쓰고, convention에 없는 개념만 새로 정의합니다([용어 정하기](feature/requirements-format.md#용어-정하기-기존-용어--현업-용어)).
+
+**design 전에 묻습니다.** requirements를 쓴 뒤 design을 시작하기 전에, Glossary 용어를 convention과 대조해 다음을 사용자에게 묻습니다.
+
+| 경우 | 묻는 것 |
+|---|---|
+| convention에 없는 용어 | convention에 추가할지 |
+| convention과 다르게 쓴 용어 (Open Questions에 올린 것) | convention을 바꿀지, requirements를 convention에 맞출지 |
+
+- 사용자가 고른 대로 convention을 고친 뒤에 design을 시작합니다. 고르지 않은 용어는 그대로 둡니다.
+- 이것은 "있을 때는 고치지 않는다"의 예외입니다. 사용자가 고른 용어만, 고른 대로 고칩니다.
+- 넣을 곳은 convention의 용어 문서입니다. 없으면 어디에 둘지 묻고, 기본은 `<conventionDir>/glossary.md`(틀: `templates/convention/glossary.md`)입니다.
+- 묻는 일은 기능 명세(spec)와 기존 코드 옮기기(adopt)의 design 시작 때 합니다. 버그 명세는 convention 용어를 따르기만 합니다.
 
 ## 우선순위
 

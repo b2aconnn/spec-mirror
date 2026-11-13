@@ -29,7 +29,7 @@ Run this once in your project:
 /spec-mirror:init
 ```
 
-It creates `.spec-mirror/config.json` and the spec folder `docs/spec/`. If there is no `docs/convention/`, it recommends an architecture for your project and creates it once you pick one.
+It creates `.spec-mirror/config.json` and the spec folder `docs/spec/`. If there are no convention docs, it recommends an architecture for your project and creates it once you pick one.
 
 ## Usage
 
@@ -77,7 +77,7 @@ Claude writes the spec from the code **without changing behavior**. For a whole 
 
 ## Following your team's conventions
 
-spec-mirror only writes specs and links them to tests and code. Architecture, naming, validation and error handling, test kinds and code style differ per project, so they come from your team's rules in `docs/convention/`.
+spec-mirror only writes specs and links them to tests and code. Architecture, naming, validation and error handling, test kinds and code style differ per project, so they come from your team's convention docs.
 
 ```
 docs/
@@ -88,8 +88,24 @@ docs/
     └── testing.md         test kinds and tools
 ```
 
-- **If it exists**, Claude follows it as is and never edits it. Any file names, subfolders included. Somewhere else? Set `"conventionDir": "wiki/rules"` in `.spec-mirror/config.json`.
-- **If it doesn't**, Claude creates it during `init` or the first design / implementation: it looks at the project kind and size, recommends an architecture, and saves a draft once you pick one. Existing code's structure is always the first option; adopt just records the current structure.
+Convention docs are found in two ways (both are read):
+
+| Way | Example | Where |
+|---|---|---|
+| A folder | `docs/convention/architecture.md` | every file under `docs/convention/` (setting `conventionDir`) |
+| A file name | `convention.md`, `project-convention.md`, `backend-convention.md` | any file named `convention.md` or `*-convention.md` anywhere in the project, case-insensitive (setting `conventionFiles`) |
+
+`node_modules`, `build` and dot folders are skipped. To change it:
+
+```jsonc
+{
+  "conventionDir": "wiki/rules",
+  "conventionFiles": ["convention.md", "*-convention.md", "*-guide.md"]
+}
+```
+
+- **If they exist**, Claude follows them as is and never edits them — except terms: convention terms win over requirements, and new or differing terms are listed before design so you can choose to add, change or keep each one.
+- **If there are none**, Claude creates them in `docs/convention/` during `init` or the first design / implementation: it looks at the project kind and size, recommends an architecture, and saves a draft once you pick one. Existing code's structure is always the first option; adopt just records the current structure.
 
 | Kind | Small | Medium | Large |
 |---|---|---|---|
@@ -108,9 +124,9 @@ Example: [examples/convention/](examples/convention/) (Spring backend, 3 layer +
 - **The format is checked automatically** on every save, and Claude fixes errors right away.
 - **A separate reviewer agent** reads each stage independently. Its findings, and what was done with them, are shown when Claude asks for approval.
 - **Each step in a requirement's flow is color-coded**: 🟢 business flow (request · action · response), 🟠 validation, 🟣 external request. The legend sits right under the requirements heading, so you can read the business flow first by following 🟢, then the validations by following 🟠. The classification follows Cockburn's use-case step kinds.
-- **Existing terms come first.** Before writing requirements, the existing specs' glossaries and the code's entity and enum names are searched, and the same concept keeps the same name. If the code has `User`, the new spec says user (User), not member (Member). Terms and sentences use the business language people actually use, not developer words.
+- **Existing terms come first.** Before writing requirements, terms in your **convention docs come first**, then other specs' glossaries and the code's entity and enum names; the same concept keeps the same name. If the code has `User`, the new spec says user (User), not member (Member). Terms use the business language people actually use. If requirements define terms the convention doesn't have, Claude asks whether to add or change them in the convention before starting design.
 - **Code names follow the domain terms.** Glossary English names become class and variable names. The checker reports glossary terms missing from design's term ↔ code table and glossary state values missing from the code. Other naming style comes from your conventions.
-- **Architecture follows your conventions.** 3 layer or DDD, design and code follow `docs/convention/`. See [Following your team's conventions](#following-your-teams-conventions).
+- **Architecture follows your conventions.** 3 layer or DDD, design and code follow your convention docs. See [Following your team's conventions](#following-your-teams-conventions).
 - **Requirements are written in natural Korean by default** (`# 요구사항`, `## 개요`, `**사용자 이야기:**` …). The English frame (`# Requirements Document`, `## Introduction`, `**User Story:** As a …`) is still accepted, so existing documents keep passing the checks.
 - **Spec and code are linked by number.** One criterion maps to test scenarios (`R1-2 …`) and one code branch (`// R1-2`). `/spec-mirror:sync` finds the gaps.
 - **Tests are BDD scenarios.** Names read as "<situation> then <outcome>" sentences in domain language (e.g. `R6-17 결제사가 주문과 같은 내용으로 승인하면 결제가 완료된다`), bodies are given / when / then. Tests state the policy, not observed details like status codes; those checks live in test support code. Boundary values with the same outcome are examples of one scenario.

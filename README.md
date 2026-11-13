@@ -29,7 +29,7 @@ Claude Code와 Node.js 18 이상이 필요합니다.
 /spec-mirror:init
 ```
 
-`.spec-mirror/config.json`과 명세 폴더 `docs/spec/`이 생깁니다. 팀 규칙 폴더 `docs/convention/`이 없으면 프로젝트에 맞는 아키텍처를 추천하고, 고르면 만들어 줍니다([팀 convention 따르기](#팀-convention-따르기)).
+`.spec-mirror/config.json`과 명세 폴더 `docs/spec/`이 생깁니다. 팀 규칙(convention) 문서가 없으면 프로젝트에 맞는 아키텍처를 추천하고, 고르면 `docs/convention/`에 만들어 줍니다([팀 convention 따르기](#팀-convention-따르기)).
 
 ## 사용법
 
@@ -204,7 +204,7 @@ Claude Code와 Node.js 18 이상이 필요합니다.
 
 ## 팀 convention 따르기
 
-spec-mirror는 **명세를 쓰고, 명세와 테스트 · 코드를 잇는 일**만 합니다. 아키텍처, 이름 규칙, 검증 · 예외 처리, 테스트 종류, 코드 스타일은 프로젝트마다 다르므로 `docs/convention/`의 팀 규칙을 따릅니다.
+spec-mirror는 **명세를 쓰고, 명세와 테스트 · 코드를 잇는 일**만 합니다. 아키텍처, 이름 규칙, 검증 · 예외 처리, 테스트 종류, 코드 스타일은 프로젝트마다 다르므로 팀 규칙(convention) 문서를 따릅니다.
 
 ```
 docs/
@@ -215,12 +215,23 @@ docs/
     └── testing.md         테스트 종류 · 도구
 ```
 
-**convention이 있으면** 고치지 않고 그대로 따릅니다.
+**convention 문서는 두 가지 방법으로 둘 수 있습니다.** 둘 다 있으면 모두 읽습니다.
 
-- 파일 이름과 개수는 자유입니다. 하위 폴더까지 모두 읽습니다.
-- 다른 곳에 있으면 `.spec-mirror/config.json`의 `conventionDir`에 그 경로를 적습니다. 예: `"conventionDir": "wiki/rules"`
+| 방법 | 예 | 찾는 곳 |
+|---|---|---|
+| ① 폴더에 모으기 | `docs/convention/architecture.md` | `docs/convention/` 안의 모든 파일 (하위 폴더까지, 파일 이름 자유) |
+| ② 이름으로 두기 | `convention.md`, `project-convention.md`, `backend-convention.md` | 프로젝트 어디서든 `convention.md` 또는 `○○-convention.md` 이름인 파일 |
 
-**convention이 없으면** Claude가 만듭니다. `init`이나 첫 design · 구현 때 프로젝트 종류와 규모를 보고 아키텍처를 추천하고, 고르면 초안을 보여 준 뒤 저장합니다.
+- 대소문자는 가리지 않습니다(`CONVENTION.md`도 됩니다).
+- `node_modules`, `build` 같은 폴더와 `.`으로 시작하는 폴더는 찾지 않습니다.
+- 위치나 이름이 다르면 설정에서 바꿉니다. 아래 [설정](#설정)을 보세요.
+
+**convention이 있으면** 고치지 않고 그대로 따릅니다. 예외는 용어 하나입니다.
+
+- convention의 용어(용어집 · 용어 표)가 요구사항의 용어보다 우선합니다.
+- 요구사항에서 convention에 없는 용어를 새로 정의했거나 다르게 썼으면, design을 시작하기 전에 표로 보여 주고 용어마다 **추가 · 변경 · 그대로**를 묻습니다. 고른 것만 convention에 반영한 뒤 design을 씁니다.
+
+**convention이 없으면** Claude가 만듭니다. `init`이나 첫 design · 구현 때 프로젝트 종류와 규모를 보고 아키텍처를 추천하고, 고르면 초안을 보여 준 뒤 `docs/convention/`에 저장합니다.
 
 | 종류 | 작은 프로젝트 | 보통 | 큰 프로젝트 |
 |---|---|---|---|
@@ -257,9 +268,9 @@ docs/
 - **단계마다 사람이 승인합니다.** Claude가 스스로 다음 단계로 넘어가지 않습니다. 승인 전에는 다음 단계 문서를 쓸 수 없게 막혀 있습니다.
 - **형식을 자동으로 검사합니다.** 명세 문서를 저장할 때마다 검사하고, 틀린 곳은 Claude가 그 자리에서 고칩니다.
 - **리뷰어가 따로 봅니다.** 단계마다 별도의 리뷰 에이전트가 문서를 다시 읽고 빠진 것을 찾습니다. 승인을 요청할 때 무엇을 지적받았고 어떻게 처리했는지 함께 보여 줍니다.
-- **이미 쓰는 용어를 그대로 씁니다.** 요구사항을 쓰기 전에 다른 명세의 용어와 코드의 엔티티 · enum 이름을 찾아, 같은 개념이면 그 이름을 씁니다. 코드에 `User`가 있으면 새 문서에서도 회원(Member)이 아니라 사용자(User)입니다. 용어와 문장은 개발자 말이 아니라 현업에서 쓰는 비즈니스 말로 씁니다.
+- **이미 쓰는 용어를 그대로 씁니다.** 요구사항을 쓰기 전에 **convention 문서의 용어를 가장 먼저**, 그다음 다른 명세의 용어와 코드의 엔티티 · enum 이름을 찾아 같은 개념이면 그 이름을 씁니다. 코드에 `User`가 있으면 새 문서에서도 회원(Member)이 아니라 사용자(User)입니다. 용어와 문장은 개발자 말이 아니라 현업에서 쓰는 비즈니스 말로 씁니다. convention에 없는 용어를 새로 정의했으면, design을 시작하기 전에 convention에 추가하거나 바꿀지 물어봅니다.
 - **코드 이름은 도메인 용어를 따릅니다.** 요구사항 용어의 영문 이름이 클래스 · 변수 이름이 됩니다. design의 "도메인 용어 ↔ 코드" 표에 빠진 용어가 있거나 용어의 상태 값이 코드에 없으면 검사기가 알려 줍니다. 그 밖의 이름 스타일은 convention을 따릅니다.
-- **아키텍처는 팀 convention을 따릅니다.** 3 layer든 DDD든 `docs/convention/`의 규칙대로 설계하고 구현합니다. 없으면 규모에 맞는 구조를 추천해 만듭니다. [팀 convention 따르기](#팀-convention-따르기)
+- **아키텍처는 팀 convention을 따릅니다.** 3 layer든 DDD든 팀 convention 문서대로 설계하고 구현합니다. 없으면 규모에 맞는 구조를 추천해 만듭니다. [팀 convention 따르기](#팀-convention-따르기)
 - **명세와 코드를 번호로 잇습니다.** 요구사항의 기준 하나가 테스트 시나리오(`R1-2 …`)와 코드 분기 하나(`// R1-2`)로 이어집니다. `/spec-mirror:sync`가 빠진 것을 찾아 줍니다.
 - **테스트는 BDD 시나리오로 씁니다.** 이름은 `R6-17 결제사가 주문과 같은 내용으로 승인하면 결제가 완료된다`처럼 "<상황>이면 <결과>다" 문장이고, 본문은 given / when / then입니다. 개발자가 아니어도 읽을 수 있게 도메인 용어로 정책을 쓰고, 응답 코드 · 상태 값 같은 현상 확인은 테스트 지원 코드 안에 둡니다. 결과가 같은 경계값은 한 시나리오의 예시로 묶습니다.
 - **빠진 테스트가 없게 합니다.** 기준마다 어떤 테스트가 확인하는지 design 05의 표에 남기고, 에러마다 회원이 실제로 받는 응답을 확인하는 테스트를 하나 이상 둡니다. 유닛 · 통합 · E2E 같은 테스트 종류는 convention을 따릅니다.
@@ -316,12 +327,28 @@ docs/spec/
 |---|---|---|
 | `specRoot` | `docs/spec` | 명세 폴더 |
 | `techContext` | `CLAUDE.md`, `README.md` | Claude가 프로젝트의 기술 스택을 먼저 확인하는 문서 |
-| `conventionDir` | `docs/convention` | 팀 개발 규칙 폴더. 없으면 만들고, 설계 · 구현에서 가장 먼저 참고 ([팀 convention 따르기](#팀-convention-따르기)) |
+| `conventionDir` | `docs/convention` | 팀 규칙(convention) 폴더. 안의 모든 파일을 읽고, convention이 없으면 여기에 만듭니다 |
+| `conventionFiles` | `convention.md`, `*-convention.md` | 프로젝트 어디서든 찾을 convention 파일 이름. `*`는 아무 글자 |
 | `testPathPatterns` | 일반적인 테스트 경로 | 테스트 파일을 구분하는 규칙 |
 | `extraItemLabels` | 없음 | 요구사항 항목 이름으로 더 허용할 말 |
 | `stageGate` | `true` | 승인 전 다음 단계 작성 막기 |
 
-특정 언어나 프레임워크를 가정하지 않습니다. 기술 스택은 convention 폴더, 위 문서, 빌드 파일, 기존 코드 순서로 찾고, 그래도 모르면 물어봅니다.
+특정 언어나 프레임워크를 가정하지 않습니다. 기술 스택은 convention 문서, 위 문서, 빌드 파일, 기존 코드 순서로 찾고, 그래도 모르면 물어봅니다.
+
+**convention 위치를 바꾸는 예**
+
+```jsonc
+{
+  // 팀 규칙이 wiki/rules 폴더에 있을 때
+  "conventionDir": "wiki/rules",
+
+  // 파일 이름이 ○○-guide.md 일 때 (기본 이름도 계속 찾으려면 함께 적습니다)
+  "conventionFiles": ["convention.md", "*-convention.md", "*-guide.md"]
+}
+```
+
+- 폴더만 쓰려면 `"conventionFiles": []`, 이름으로만 찾으려면 `"conventionDir": ""`로 둡니다.
+- 지금 어떤 문서를 읽는지는 Claude에게 "convention 뭐 읽고 있어?"라고 물으면 알려 줍니다. (검사기 명령: `node <플러그인>/scripts/spec-mirror.mjs convention`)
 
 ## CI에서 형식 검사
 

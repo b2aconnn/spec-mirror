@@ -2,6 +2,17 @@
 
 이 프로젝트의 변경 이력입니다. 버전은 [Semantic Versioning](https://semver.org/)을 따릅니다.
 
+## [0.11.0] - 2026-11-13
+
+### 추가
+- convention 문서를 파일 이름으로도 찾음: 프로젝트 어디서든 `convention.md`, `*-convention.md`(예: `project-convention.md`, `backend-convention.md`). 대소문자 무시, `ignoreDirs` · 숨김 폴더 제외
+- 설정 `conventionFiles`(기본 `["convention.md", "*-convention.md"]`). `conventionDir` 폴더와 함께 읽고, 둘 중 하나만 쓰려면 `""` · `[]`
+- 검사기 `convention` 명령이 폴더와 이름 패턴 양쪽 결과를 보여 줌(`--json`은 `{ dir, patterns, files }`)
+- README: convention 두는 두 가지 방법, 설정 예시
+- 용어는 convention이 우선: requirements의 Glossary는 convention 문서의 용어(한글 · 영문)를 가장 먼저 쓰고, 그다음 다른 명세 · 코드에서 찾음. 다르게 부르는 곳은 Open Questions
+- design 시작 전에 convention에 없는 용어 · 다르게 쓴 용어를 표로 보여 주고 용어마다 추가 · 변경 · 그대로를 물음. 고른 것만 convention에 반영한 뒤 design을 씀 (spec · adopt)
+- convention 용어 틀 `templates/convention/glossary.md`
+
 ## [0.10.0] - 2026-11-13
 
 플러그인은 명세 작성과 명세 ↔ 테스트 ↔ 코드 추적에 집중하고, 아키텍처 · 코딩 규칙은 프로젝트 convention이 정합니다.

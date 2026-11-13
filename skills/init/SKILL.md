@@ -25,6 +25,7 @@ allowed-tools: Bash(node *spec-mirror.mjs* init*), Bash(node *spec-mirror.mjs* c
    | `specRoot` | 이미 명세 폴더가 있으면 그 위치 (기본 `docs/spec`) |
    | `techContext` | 기술 스택·관례가 적힌 문서 (`CLAUDE.md`, `README.md`, `docs/architecture.md` 등) |
    | `conventionDir` | 팀 convention 문서 폴더 (기본 `docs/convention`). 다른 곳(예: `docs/rules`, `wiki/convention`)에 이미 있으면 그 경로를 제안합니다 |
+   | `conventionFiles` | 프로젝트 어디서든 찾을 convention 파일 이름 (기본 `convention.md`, `*-convention.md`). 팀이 다른 이름(예: `*-guide.md`)을 쓰면 추가를 제안합니다 |
    | `testPathPatterns` | 테스트 파일을 구분하는 경로 정규식. 기존 테스트 위치를 보고 맞는지 확인 |
    | `extraItemLabels` | Glossary에 없지만 세부 항목 이름으로 쓸 외부 시스템 이름 |
    | `stageGate` | 단계 잠금 훅 (기본 켜짐. 끄는 것은 권장하지 않음) |
@@ -50,10 +51,10 @@ allowed-tools: Bash(node *spec-mirror.mjs* init*), Bash(node *spec-mirror.mjs* c
    - 테스트는 BDD 시나리오(given / when / then)로, 이름은 `R{N}-{M} <상황>이면 <결과>다`. 도메인 용어로 정책을 쓰고 응답 코드 · 상태 값 같은 현상은 쓰지 않는다.
    - 버그는 탐색 테스트가 고치기 전에 실패하는 것을 확인한 뒤에 고치고, 고친 동작을 기능 명세에 반영한다.
    - 문서와 코드가 다르면 문서가 맞다. "명세 동기화해줘" 는 `/spec-mirror:sync <이름>` 이다.
-   - 아키텍처 · 이름 · 검증 · 예외 · 테스트 종류 · 코드 스타일은 `docs/convention/`을 가장 먼저 따른다. design은 그중 설계에 관한 규칙을, 구현은 전부를 따른다. 단 테스트 이름 · `R{N}-{M}` 주석 · 에러 메시지 원문은 spec-mirror 규칙을 따른다.
+   - 아키텍처 · 이름 · 검증 · 예외 · 테스트 종류 · 코드 스타일은 convention(`docs/convention/`, `convention.md`, `*-convention.md`)을 가장 먼저 따른다. design은 그중 설계에 관한 규칙을, 구현은 전부를 따른다. 단 테스트 이름 · `R{N}-{M}` 주석 · 에러 메시지 원문은 spec-mirror 규칙을 따른다.
    ```
 
-   `conventionDir`을 바꿨으면 블록의 `docs/convention/`도 그 경로로 씁니다.
+   `conventionDir` · `conventionFiles`를 바꿨으면 블록의 경로 · 이름도 그대로 씁니다.
 
 6. **기존 명세를 확인합니다.** `docs/spec/` 아래에 이미 명세가 있으면 `SM check`를 실행해 결과를 보고합니다. 오류가 있으면 어느 명령으로 고칠지 안내합니다.
 

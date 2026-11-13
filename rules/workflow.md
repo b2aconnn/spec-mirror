@@ -74,7 +74,7 @@
 
 ## 프로젝트 convention
 
-아키텍처, 이름 스타일, 검증 · 예외 처리, 테스트 종류, 코드 스타일은 프로젝트 convention(설정 `conventionDir`, 기본 `docs/convention`)이 정합니다. 있으면 그대로 따르고, 없으면 아키텍처를 추천해 만듭니다. design은 그중 설계에 관한 것을, 구현은 전부를 가장 먼저 따릅니다. 자세한 것은 [convention 규칙](convention.md)입니다.
+아키텍처, 이름 스타일, 검증 · 예외 처리, 테스트 종류, 코드 스타일은 프로젝트 convention(`docs/convention/` 폴더, 또는 `convention.md` · `*-convention.md` 파일. 설정 `conventionDir` · `conventionFiles`)이 정합니다. 있으면 그대로 따르고, 없으면 아키텍처를 추천해 만듭니다. design은 그중 설계에 관한 것을, 구현은 전부를 가장 먼저 따릅니다. 자세한 것은 [convention 규칙](convention.md)입니다.
 
 ## 변경 흐름
 

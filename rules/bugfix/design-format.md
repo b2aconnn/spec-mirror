@@ -159,7 +159,7 @@ END FUNCTION
 
 기능 design과 같습니다. [기능 design 규칙](../feature/design-format.md#기술-정보-찾기)의 순서대로 프로젝트에서 찾고, 추측으로 정하지 않습니다. 원인 분석은 **반드시 코드를 읽고** 씁니다.
 
-convention(설정 `conventionDir`, 기본 `docs/convention`)의 **설계에 관한 것**을 가장 먼저 참고해 고치는 위치 · 방법 · 새 이름 · 테스트 종류를 정합니다. 없으면 먼저 만듭니다([convention 규칙](../convention.md)). 따른 규칙과 근거 문서는 Fix Implementation에 한 줄씩 적습니다. 예: `convention: 외부 결제사 응답 대조는 서비스에서 (docs/convention/architecture.md)`
+convention(`SM convention`으로 찾은 문서)의 **설계에 관한 것**을 가장 먼저 참고해 고치는 위치 · 방법 · 새 이름 · 테스트 종류를 정합니다. 없으면 먼저 만듭니다([convention 규칙](../convention.md)). 따른 규칙과 근거 문서는 Fix Implementation에 한 줄씩 적습니다. 예: `convention: 외부 결제사 응답 대조는 서비스에서 (docs/convention/architecture.md)`
 
 ## 검사 규칙
 

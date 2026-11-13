@@ -263,7 +263,7 @@ design은 그 구조 안에서 **requirements의 기준을 코드 어디서 지�
 
 design을 쓰기 전에 다음 순서로 프로젝트의 기술 맥락을 확인합니다. 플러그인은 특정 언어 · 프레임워크 · 아키텍처를 가정하지 않습니다.
 
-1. **convention 문서 중 설계에 관한 것** (설정 `conventionDir`, 기본 `docs/convention`). 가장 우선합니다. 없으면 [convention 규칙](../convention.md)의 "없을 때"를 따라 먼저 만듭니다.
+1. **convention 문서 중 설계에 관한 것** (`docs/convention/` 폴더와 `convention.md` · `*-convention.md` 파일. 찾는 곳은 [convention 규칙](../convention.md#위치)). 가장 우선합니다. 없으면 [convention 규칙](../convention.md)의 "없을 때"를 따라 먼저 만듭니다.
 2. 설정 `techContext`에 적힌 문서 (기본 `CLAUDE.md`, `README.md`)
 3. 빌드·의존성 파일 (`build.gradle*`, `pom.xml`, `package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml` 등)
 4. 같은 종류의 기존 코드 (진입점 · 서비스 · 저장소 · 테스트 한두 개씩)

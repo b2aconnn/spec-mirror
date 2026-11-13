@@ -624,12 +624,13 @@ describe('CLI', () => {
     assert.equal(cfg.specRoot, 'docs/spec')
     assert.match(cli(dir, 'init').stdout, /이미 설정/)
     assert.equal(cfg.conventionDir, 'docs/convention')
+    assert.deepEqual(cfg.conventionFiles, ['convention.md', '*-convention.md'])
   })
 
   test('convention 은 설정한 폴더의 문서를 하위 폴더까지 보여 준다', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'spec-mirror-conv-'))
     fs.mkdirSync(path.join(dir, '.git'))
-    assert.deepEqual(JSON.parse(cli(dir, 'convention', '--json').stdout), { dir: 'docs/convention', files: [] })
+    assert.deepEqual(JSON.parse(cli(dir, 'convention', '--json').stdout), { dir: 'docs/convention', patterns: ['convention.md', '*-convention.md'], files: [] })
     fs.mkdirSync(path.join(dir, 'docs/convention/backend'), { recursive: true })
     fs.writeFileSync(path.join(dir, 'docs/convention/coding.md'), '# 코딩')
     fs.writeFileSync(path.join(dir, 'docs/convention/backend/validation.md'), '# 검증')
@@ -639,7 +640,24 @@ describe('CLI', () => {
     fs.writeFileSync(path.join(dir, '.spec-mirror/config.json'), JSON.stringify({ conventionDir: 'team/rules' }))
     fs.mkdirSync(path.join(dir, 'team/rules'), { recursive: true })
     fs.writeFileSync(path.join(dir, 'team/rules/api.md'), '# API')
-    assert.deepEqual(JSON.parse(cli(dir, 'convention', '--json').stdout), { dir: 'team/rules', files: ['team/rules/api.md'] })
+    assert.deepEqual(JSON.parse(cli(dir, 'convention', '--json').stdout).files, ['team/rules/api.md'])
+  })
+
+  test('convention 은 프로젝트 어디서든 convention.md · *-convention.md 이름의 파일을 찾는다', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'spec-mirror-conv-'))
+    fs.mkdirSync(path.join(dir, '.git'))
+    fs.mkdirSync(path.join(dir, 'backend/docs'), { recursive: true })
+    fs.mkdirSync(path.join(dir, 'node_modules/x'), { recursive: true })
+    fs.writeFileSync(path.join(dir, 'CONVENTION.md'), '# 공통')
+    fs.writeFileSync(path.join(dir, 'project-convention.md'), '# 프로젝트')
+    fs.writeFileSync(path.join(dir, 'backend/docs/backend-convention.md'), '# 백엔드')
+    fs.writeFileSync(path.join(dir, 'backend/conventions.md'), '# 이름이 다름')
+    fs.writeFileSync(path.join(dir, 'node_modules/x/convention.md'), '# 무시')
+    assert.deepEqual(JSON.parse(cli(dir, 'convention', '--json').stdout).files, ['CONVENTION.md', 'backend/docs/backend-convention.md', 'project-convention.md'])
+    fs.mkdirSync(path.join(dir, '.spec-mirror'))
+    fs.writeFileSync(path.join(dir, '.spec-mirror/config.json'), JSON.stringify({ conventionFiles: ['*-rules.md'] }))
+    fs.writeFileSync(path.join(dir, 'team-rules.md'), '# 팀')
+    assert.deepEqual(JSON.parse(cli(dir, 'convention', '--json').stdout).files, ['team-rules.md'])
   })
 
   test('expandRefs', () => {
