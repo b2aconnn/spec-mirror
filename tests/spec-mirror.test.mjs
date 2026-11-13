@@ -225,6 +225,12 @@ mutationCases('design Aggregates', 'order', 'design/03-data-models.md', [
   ['DES015', '없는 기준 참조', 'Requirements 6.24, 6.25, 6.26', 'Requirements 6.24, 6.25, 6.27'],
 ])
 
+mutationCases('design 테스트 계층', 'order', 'design/05-testing.md', [
+  ['DES006', '기준 ↔ 테스트 계층 섹션 누락', '#### 2. 기준 ↔ 테스트 계층', '#### 2. 테스트 계층 표'],
+  ['DES017', '없는 기준 참조', '| 9.1 ~ 9.5 | Order Payment Synchronizer', '| 9.1 ~ 9.6 | Order Payment Synchronizer'],
+  ['DES017', '표에 없는 기준', '| 9.1 ~ 9.5 | Order Payment Synchronizer', '| 9.1 ~ 9.4 | Order Payment Synchronizer', 'warning'],
+])
+
 describe('design 설계 규모와 컴포넌트 수', () => {
   test('DES014 작음 예제에 Aggregate 표를 넣으면 경고', () => {
     const p = project()

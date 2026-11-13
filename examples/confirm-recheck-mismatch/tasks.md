@@ -12,7 +12,8 @@
   - **Property 1: Bug Condition - 즉시 조회의 대조 불일치는 502로 응답**
   - **고치기 전 코드에서 실패해야 합니다.** 실패가 버그를 증명합니다. 통과하면 원인 분석이 틀린 것이므로 멈추고 다시 분석합니다
   - 테스트를 고쳐서 통과시키지 않습니다. 이 테스트는 기대 동작을 담고 있고, 고친 뒤에 통과해야 합니다
-  - `OrderPaymentConfirmAcceptanceTest`에 `R6-21c 즉시 조회에서 대조 결과가 다르면 승인을 취소하고 502로 응답한다` 추가
+  - 통합: `PaymentConfirmIntegrationTest`에 `R6-21c 결제사에 다시 조회한 승인 내용이 주문과 다르면 그 결제는 취소되고 실패한다` 추가
+  - E2E: `OrderPaymentE2ETest`에 `R6-21d 결제사에 다시 조회한 승인 내용이 주문과 다르면 결제를 취소했다고 안내받는다` 추가
   - `ConfirmRecheckMismatchPropertyTest`에 Property 1 추가: 금액 · 주문번호 · 결제 키 불일치를 무작위로 만든다
   - 실패할 때 나온 반례를 "결과:"로 남깁니다 (예상: `400 PG_REJECTED`, 메시지 "amount(15000 != 14000)")
   - _Requirements: 1.1, 1.2, 2.1, 2.2_
@@ -58,8 +59,9 @@
 ## Notes
 
 - **탐색 테스트 먼저**: 1번은 고치기 전에 실패해야 하고, 2번은 고치기 전에 통과해야 합니다. 이 두 가지를 확인한 뒤에만 3번을 시작합니다
-- **테스트 이름**: order 명세 기준 번호(`R6-21c`)를 씁니다. 버그만을 위한 Property 테스트 파일에는 버그 이름 `confirm-recheck-mismatch`를 주석으로 남깁니다
-- **테스트 환경**: H2(MySQL 모드) + `FakePgClient` + 고정 `Clock`
+- **테스트 형식**: BDD 시나리오(given / when / then)이고 이름은 `R{N}-{M} <상황>이면 <결과>다`입니다. 고치는 코드가 Service에 있어 통합 테스트로, 응답 코드가 바뀌므로 E2E로도 확인합니다
+- **테스트 이름**: order 명세 기준 번호(`R6-21c`, `R6-21d`)를 씁니다. 버그만을 위한 Property 테스트 파일에는 버그 이름 `confirm-recheck-mismatch`를 주석으로 남깁니다
+- **테스트 환경**: 통합 · E2E 모두 H2(MySQL 모드) + `FakePgClient` + 고정 `Clock`
 - **범위 밖**: 대사 코드 변경, 보상 취소 실패 시 수동 처리
 
 ## Task Dependency Graph

@@ -166,7 +166,7 @@ FOR ALL input WHERE NOT isBugCondition(input) DO
 END FOR
 ~~~
 
-**Testing Approach:** 고치기 전 코드에서 기존 인수 테스트와 Property 테스트를 먼저 실행해 통과를 확인하고(현재 동작 기록), 고친 뒤 다시 실행합니다. Property 테스트는 PG 승인 결과(승인 · 거절 · 미도달 · 결과 불명 · 예상 못한 오류)와 조회 결과(승인 일치 · 실패 확정 · 미확정 · 조회 실패)의 조합을 무작위로 만들고, 버그 조건 조합은 뺍니다.
+**Testing Approach:** 고치기 전 코드에서 기존 시나리오 테스트와 Property 테스트를 먼저 실행해 통과를 확인하고(현재 동작 기록), 고친 뒤 다시 실행합니다. Property 테스트는 PG 승인 결과(승인 · 거절 · 미도달 · 결과 불명 · 예상 못한 오류)와 조회 결과(승인 일치 · 실패 확정 · 미확정 · 조회 실패)의 조합을 무작위로 만들고, 버그 조건 조합은 뺍니다.
 
 **Test Cases:**
 1. **승인 응답 불일치 보존**: 승인 응답에서 금액 불일치 → `502` 그대로 (기존 `R6-18`)
@@ -177,11 +177,14 @@ END FOR
 
 ### 테스트 이름
 
-| bugfix 항목 | 테스트 | 위치 |
-|---|---|---|
-| 2.1, 2.2 | `R6-21c 즉시 조회에서 대조 결과가 다르면 승인을 취소하고 502로 응답한다` (신규) | `OrderPaymentConfirmAcceptanceTest` |
-| 3.1 | `R6-18 대조 결과가 다르면 PG 승인을 취소하고 결제 실패로 처리한다` (기존) | `OrderPaymentConfirmAcceptanceTest` |
-| 3.2, 3.3 | `R6-21a`, `R6-21b` (기존) | `OrderPaymentConfirmAcceptanceTest` |
-| 3.4 | `R6-22` (기존) | `OrderPaymentConfirmAcceptanceTest` |
-| 3.5 | `R7-2` (기존) | `OrderPaymentResultAcceptanceTest` |
+고치는 코드가 Payment Confirm Service에 있으므로 기대 동작은 통합 테스트가 맡고, 회원이 받는 응답 코드가 바뀌므로(`400` → `502`) E2E 시나리오도 둡니다. 테스트는 BDD 시나리오(given / when / then)로 씁니다.
+
+| bugfix 항목 | 테스트 | 계층 | 위치 |
+|---|---|---|---|
+| 2.1 | `R6-21c 결제사에 다시 조회한 승인 내용이 주문과 다르면 그 결제는 취소되고 실패한다` (신규) | 통합 | `PaymentConfirmIntegrationTest` |
+| 2.1, 2.2 | `R6-21d 결제사에 다시 조회한 승인 내용이 주문과 다르면 결제를 취소했다고 안내받는다` (신규) | E2E | `OrderPaymentE2ETest` |
+| 3.1 | `R6-18 결제사가 주문과 다른 내용으로 승인하면 그 결제는 취소되고 실패한다` (기존) | 통합 | `PaymentConfirmIntegrationTest` |
+| 3.2, 3.3 | `R6-21a`, `R6-21b` (기존) | 통합 | `PaymentConfirmIntegrationTest` |
+| 3.4 | `R6-22` (기존) | 통합 | `PaymentConfirmIntegrationTest` |
+| 3.5 | `R7-2` (기존) | 통합 | `OrderPaymentResultIntegrationTest` |
 | Property 1 ~ 3 | `ConfirmRecheckMismatchPropertyTest` (신규, 클래스 주석에 `confirm-recheck-mismatch`) | `src/test/kotlin/.../payment/` |

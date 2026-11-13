@@ -305,16 +305,35 @@ requirements를 읽고 신호마다 해당하는 칸을 고릅니다. **가장 �
 ## Testing Strategy
 
 ### 테스트 전략 개요
-#### 1. 인수 테스트 (Acceptance Tests)
-(대상 / 도구 / Requirement ↔ 테스트 묶음 표 / 예시)
-#### 2. <동시성·통합 등 추가 테스트>
-#### N. 테스트 기준 데이터      ← 필수
-#### N. 주요 테스트 시나리오
+#### 1. 테스트 계층            (유닛 / 통합 / E2E: 대상 · 도구 · 테스트 묶음)
+#### 2. 기준 ↔ 테스트 계층      ← 필수
+#### 3. 에러 ↔ E2E 시나리오
+#### 4. 테스트 지원 코드         (도메인 용어로 된 given / then 도우미, 안내 · 거절 사유 목록)
+#### 5. <동시성 등 추가 테스트>
+#### N. 테스트 기준 데이터       ← 필수
+#### N. 주요 테스트 시나리오      (Given / When / Then)
 ```
 
-- 인수 테스트 규칙은 [추적 규칙](../traceability.md)을 따릅니다.
+- 테스트 규칙은 [추적 규칙](../traceability.md#테스트)을 따릅니다. 도메인은 유닛, Application Service는 통합, Controller · API는 E2E입니다.
+- **테스트 계층**: 계층마다 대상, 도구(실제로 도는 것과 바꾸는 것), 테스트 묶음 이름을 씁니다. 프로젝트 구조가 다르면 계층 이름을 프로젝트에 맞게 정합니다.
+- **기준 ↔ 테스트 계층은 필수**입니다. 모든 기준이 한 행에 들어갑니다. 판단 위치는 02의 컴포넌트 · 메서드와 같아야 합니다.
+
+  | 기준 | 판단 위치 | 테스트 계층 | 테스트 묶음 |
+  |---|---|---|---|
+  | 6.5 ~ 6.12 | `Payment.startApproval()` | 유닛 | `PaymentTest` |
+  | 6.15 ~ 6.23 | `PaymentConfirmService` | 통합 | `PaymentConfirmServiceIntegrationTest` |
+  | 6.1, 6.2, 6.26 | `PaymentController` | E2E | `OrderPaymentE2ETest` |
+
+- **에러 ↔ E2E 시나리오**: 04의 에러 코드마다 응답 코드를 확인하는 E2E 시나리오를 하나 이상 적습니다.
+
+  | 에러 코드 | 응답 | E2E 시나리오 |
+  |---|---|---|
+  | `AMOUNT_MISMATCH` | `400` | `R6-5 회원이 주문 금액과 다른 금액으로 결제하면 결제할 수 없다고 안내받는다` |
+
+- **테스트 지원 코드**: 시나리오에서 부르는 도움 함수 · 객체를 도메인 용어 이름으로 적고, 무엇을 확인하는지 씁니다. 회원이 받는 안내 · 거절 사유 목록은 04의 에러 코드 · 메시지와 1:1입니다.
 - **테스트 기준 데이터는 필수**입니다. 고정 시각, 사용자, 기준 데이터 표, 기본 시나리오 값을 씁니다. 경계값 기준(예: 20개/21개)마다 그 값을 만드는 데이터가 있어야 합니다.
 - 외부 시스템은 가짜 구현(fake)으로, 시간은 고정 시계로 테스트한다고 명시합니다.
+- **주요 테스트 시나리오**는 Given / When / Then으로 씁니다. 결과가 같은 경계값 · 조건은 `시나리오 개요` + `예` 표로 묶습니다.
 
 ## 06 Security / Performance Optimization
 
@@ -384,7 +403,7 @@ design을 쓰기 전에 다음 순서로 프로젝트의 기술 맥락을 확인
 | DES003 | 오류 | 본문 파일 첫 줄 제목, `> [design.md](../design.md)로 돌아가기` |
 | DES004 | 오류 | 본문 파일의 `##` 섹션 구성과 순서 |
 | DES005 | 오류 | 02 컴포넌트 번호 1부터 연속 |
-| DES006 | 오류 | 필수 하위 섹션: 도메인 용어 ↔ 코드, 테스트 기준 데이터, PBT Applicability Assessment, Testing Prework, Property Reflection, Correctness Properties 머리말 |
+| DES006 | 오류 | 필수 하위 섹션: 도메인 용어 ↔ 코드, 기준 ↔ 테스트 계층, 테스트 기준 데이터, PBT Applicability Assessment, Testing Prework, Property Reflection, Correctness Properties 머리말 |
 | DES007 | 오류 | Prework 항목의 세 줄과 Classification 값 |
 | DES008 | 경고 | Prework 제목이 기준 문장과 다름 (기준 문장에 없는 단어가 있음) |
 | DES009 | 오류 | Property 번호 연속, `*For any*`, `**Validates: …**` |
@@ -395,5 +414,6 @@ design을 쓰기 전에 다음 순서로 프로젝트의 기술 맥락을 확인
 | DES014 | 경고 | 규모와 Aggregates가 맞지 않음 (보통 · 큼인데 "해당 없음", 작음인데 Aggregate 표가 있음) |
 | DES015 | 오류 | Aggregates 표의 `Requirements N.M`이 requirements에 없음 |
 | DES016 | 경고 | Glossary 용어가 03 `### 도메인 용어 ↔ 코드` 표의 첫 열에 없음 |
+| DES017 | 오류/경고 | 05 `기준 ↔ 테스트 계층` 표가 requirements에 없는 기준을 참조(오류) / 표에 없는 기준이 있음(경고) |
 
 DES006의 필수 하위 섹션에는 01 `### 설계 규모` · `### 도메인 경계`, 03 `### Aggregates`도 들어갑니다.

@@ -14,7 +14,7 @@
 | 시작 | `/spec-mirror:spec <이름> [설명]` (기존 코드에서 옮기면 `/spec-mirror:adopt`) | `/spec-mirror:bugfix <이름> [버그 설명]` |
 | 1단계 | requirements.md — 비즈니스 규칙 | bugfix.md — 현재 동작 / 기대 동작 / 유지할 동작 |
 | 2단계 | design.md + design/01~08 | design.md 한 파일 — 원인, 고치는 범위, Property |
-| 3단계 | tasks.md — 인수 테스트(Red) → 구현(Green) | tasks.md — 탐색 테스트(실패) · 보존 테스트(통과) → 수정 → 확인 → 명세 반영 |
+| 3단계 | tasks.md — 테스트(Red: 유닛 · 통합 · E2E) → 구현(Green) | tasks.md — 탐색 테스트(실패) · 보존 테스트(통과) → 수정 → 확인 → 명세 반영 |
 | 규칙 | `rules/feature/` | `rules/bugfix/` |
 
 ## 단계와 승인
@@ -78,7 +78,7 @@
 1. requirements를 쓰거나 고칩니다 → 사용자 리뷰·승인
 2. design의 영향받는 부분을 고칩니다 → 승인
 3. tasks에 바뀐 기준의 태스크를 추가하거나 고칩니다 → 승인
-4. 바뀐 기준의 인수 테스트를 먼저 작성·수정하고 실패를 확인합니다 (Red)
+4. 바뀐 기준의 테스트를 먼저 작성·수정하고 실패를 확인합니다 (Red). 테스트는 그 판단을 하는 계층(유닛 · 통합 · E2E)에 BDD 시나리오로 씁니다
 5. 테스트를 통과하도록 구현합니다 (Green). 분기에 `R{N}-{M}` 주석을 답니다.
 6. 전체 테스트 통과를 확인합니다.
 

@@ -153,6 +153,8 @@ END FUNCTION
 
 테스트 이름은 [추적 규칙](../traceability.md#버그-명세)을 따릅니다. 기능 명세 기준과 연결된 동작은 그 기준의 `R{N}-{M}` 이름을 씁니다.
 
+테스트는 기능 명세와 같은 BDD 시나리오(given / when / then, 이름 `<상황>이면 <결과>다`, 도메인 용어로 정책)로 쓰고, 고치는 코드가 있는 계층의 테스트(도메인 = 유닛, Application Service = 통합, Controller · API = E2E)로 씁니다. 응답 코드가 바뀌는 버그면 E2E 시나리오도 둡니다. Testing Strategy에 테스트마다 계층을 적습니다.
+
 ## 기술 정보 찾기
 
 기능 design과 같습니다. [기능 design 규칙](../feature/design-format.md#기술-정보-찾기)의 순서대로 프로젝트에서 찾고, 추측으로 정하지 않습니다. 원인 분석은 **반드시 코드를 읽고** 씁니다.

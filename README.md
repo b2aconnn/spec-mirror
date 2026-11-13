@@ -89,7 +89,7 @@ Claude Code와 Node.js 18 이상이 필요합니다.
 - 처리 흐름의 기준마다 색이 붙습니다. 🟢 기능 흐름(요청 · 동작 · 응답) · 🟠 검증 · 🟣 외부 요청이고, 뜻은 `## 기능별 요구사항` 바로 아래 범례 한 줄에 있습니다. 🟢만 따라 읽으면 기능 흐름이, 🟠만 따라 읽으면 검증 목록이 보입니다. 분류 근거는 Cockburn의 유스케이스 단계 종류입니다.
 - 한국 사람이 읽기 편한 한국어 틀(요구사항 · 개요 · 용어 · 사용자 이야기 · 인수 조건)로 씁니다. 영어 틀(Requirements Document · User Story …)로 쓴 기존 문서도 그대로 검사를 통과합니다.
 - **처리 흐름**은 코드가 실행되는 순서 그대로입니다. 위에서 아래로 읽으면 코드를 위에서 아래로 읽는 것과 같습니다.
-- 기준 하나가 테스트 하나(`R1-2 주문 상품은 …`), 코드 분기 하나(`// R1-2`)가 됩니다.
+- 기준 하나가 테스트 시나리오(`R1-2b 주문 상품이 없거나 20개를 넘으면 주문할 수 없다`)와 코드 분기 하나(`// R1-2`)가 됩니다.
 
 전체 예시: [examples/order/requirements.md](examples/order/requirements.md)
 
@@ -111,7 +111,7 @@ Claude Code와 Node.js 18 이상이 필요합니다.
 | `design/02-components.md` | 컴포넌트와 인터페이스 (처리 순서가 요구사항과 같게) |
 | `design/03-data-models.md` | Aggregate, Value Object, 엔티티, API, 테이블, 도메인 용어 ↔ 코드 표 |
 | `design/04-error-handling.md` | 에러 코드와 메시지, 로그 |
-| `design/05-testing.md` | 테스트 전략, 테스트 기준 데이터 |
+| `design/05-testing.md` | 테스트 계층(유닛 · 통합 · E2E), 기준 ↔ 테스트 계층, 에러 ↔ E2E 시나리오, 테스트 기준 데이터 |
 | `design/06-security-performance.md` | 보안, 성능 |
 | `design/07-correctness-properties.md` | 항상 성립해야 하는 성질 (Property) |
 | `design/08-deployment-configuration.md` | 배포, 설정 |
@@ -125,12 +125,14 @@ Claude Code와 Node.js 18 이상이 필요합니다.
 
 ```markdown
 - [ ] 6. 주문 접수 구현
-  - [ ] 6.1 인수 테스트 작성: OrderPlaceAcceptanceTest
-    - 정상 접수, 상품 개수 · 수량 · 중복 상품, 금액 한도
+  - [ ] 6.1 테스트 작성: OrderLinesTest, OrderDraftTest, OrderPlaceIntegrationTest, OrderE2ETest
+    - 유닛: 없는 상품, 판매 중지 상품, 금액 계산, 금액 한도, 주문번호, 주문명
+    - 통합: 상품 카탈로그 장애, 주문 · 항목 · 결제 함께 생성
+    - E2E: 정상 접수, 상품 개수 · 수량 · 중복 상품, 에러 응답
     - _Requirements: 1.1 ~ 1.17_
 
-  - [ ] 6.2 OrderRequestItems, IdempotencyKey 구현 (Value Object)
-    - 만들 때 상품 개수 → 수량 → 중복 상품 순서로 확인
+  - [ ] 6.2 요청 검증 구현 (PlaceOrderRequest, OrderController)
+    - 상품 개수 → 수량 → 중복 상품 순서로 확인
     - _Requirements: 1.2, 1.3, 1.4_
 
   - [ ]* 6.5 Property 테스트: 주문 상품 개수 / 수량 / 중복 상품
@@ -213,7 +215,9 @@ Claude Code와 Node.js 18 이상이 필요합니다.
 - **이미 쓰는 용어를 그대로 씁니다.** 요구사항을 쓰기 전에 다른 명세의 용어와 코드의 엔티티 · enum 이름을 찾아, 같은 개념이면 그 이름을 씁니다. 코드에 `User`가 있으면 새 문서에서도 회원(Member)이 아니라 사용자(User)입니다. 용어와 문장은 개발자 말이 아니라 현업에서 쓰는 비즈니스 말로 씁니다.
 - **코드 이름은 도메인 용어를 따릅니다.** 요구사항 용어의 영문 이름이 클래스 · 변수 이름이 되고, 상태를 바꾸는 메서드는 `cancel()`, `expire()`처럼 행위 이름으로 짓습니다. design의 "도메인 용어 ↔ 코드" 표에 빠진 용어가 있거나 용어의 상태 값이 코드에 없으면 검사기가 알려 줍니다. `…Request` · `…Response` · `…Command` · `…Result` 같은 관례 접미사는 그대로 씁니다.
 - **검증은 두 곳으로 나눕니다.** 필수 값 · 길이 · 범위 · 형식처럼 요청만 보고 알 수 있는 검증은 Controller에서 Bean Validation 표준 어노테이션(`@NotBlank`, `@Size`, `@Min`, `@Pattern` 등)으로 하고, 존재 여부 · 상태 · 한도 같은 비즈니스 검증은 Application Service · 도메인에서 합니다.
-- **명세와 코드를 번호로 잇습니다.** 요구사항의 기준 하나가 테스트 하나(`R1-2 …`)와 코드 분기 하나(`// R1-2`)로 이어집니다. `/spec-mirror:sync`가 빠진 것을 찾아 줍니다.
+- **명세와 코드를 번호로 잇습니다.** 요구사항의 기준 하나가 테스트 시나리오(`R1-2 …`)와 코드 분기 하나(`// R1-2`)로 이어집니다. `/spec-mirror:sync`가 빠진 것을 찾아 줍니다.
+- **테스트는 BDD 시나리오로 씁니다.** 이름은 `R6-17 결제사가 주문과 같은 내용으로 승인하면 결제가 완료된다`처럼 "<상황>이면 <결과>다" 문장이고, 본문은 given / when / then입니다. 개발자가 아니어도 읽을 수 있게 도메인 용어로 정책을 쓰고, 응답 코드 · 상태 값 같은 현상 확인은 테스트 지원 코드 안에 둡니다. 결과가 같은 경계값은 한 시나리오의 예시로 묶습니다.
+- **테스트는 판단이 있는 계층에서 합니다.** 도메인은 유닛, Application Service는 통합, Controller는 E2E 테스트입니다. 유닛 · 통합은 거절을 예외로 확인하고, 응답 코드는 E2E가 에러마다 확인합니다. 기준마다 어느 계층이 맡는지는 design 05의 표에 있습니다.
 - **승인 뒤에 문서를 고치면** 다시 승인받아야 다음 단계로 갈 수 있습니다.
 
 ## 명령

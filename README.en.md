@@ -86,7 +86,9 @@ Claude writes the spec from the code **without changing behavior**. For a whole 
 - **Code names follow the domain terms.** Glossary English names become class and variable names, and state changes are behavior methods such as `cancel()` and `expire()`. The checker reports glossary terms missing from design's term ↔ code table and glossary state values missing from the code. Conventional suffixes such as `…Request`, `…Response`, `…Command` and `…Result` are fine.
 - **Validation lives in two places.** Checks that need only the request (required values, length, range, format) are done in the controller with standard Bean Validation annotations (`@NotBlank`, `@Size`, `@Min`, `@Pattern`, …); business checks (existence, state, limits) are done in the application service or the domain.
 - **Requirements are written in natural Korean by default** (`# 요구사항`, `## 개요`, `**사용자 이야기:**` …). The English frame (`# Requirements Document`, `## Introduction`, `**User Story:** As a …`) is still accepted, so existing documents keep passing the checks.
-- **Spec and code are linked by number.** One criterion maps to one test (`R1-2 …`) and one code branch (`// R1-2`). `/spec-mirror:sync` finds the gaps.
+- **Spec and code are linked by number.** One criterion maps to test scenarios (`R1-2 …`) and one code branch (`// R1-2`). `/spec-mirror:sync` finds the gaps.
+- **Tests are BDD scenarios.** Names read as "<situation> then <outcome>" sentences in domain language (e.g. `R6-17 결제사가 주문과 같은 내용으로 승인하면 결제가 완료된다`), bodies are given / when / then. Tests state the policy, not observed details like status codes; those checks live in test support code. Boundary values with the same outcome are examples of one scenario.
+- **Tests live where the decision is made.** Domain → unit, Application Service → integration, Controller → E2E. Unit and integration tests check rejections as exceptions; E2E checks the response code for every error. design 05 maps each criterion to its layer.
 
 ## Commands
 

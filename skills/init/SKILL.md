@@ -41,7 +41,9 @@ allowed-tools: Bash(node *spec-mirror.mjs* init*), Bash(node *spec-mirror.mjs* c
      - 버그: bugfix.md → design.md → tasks.md — `/spec-mirror:bugfix <이름>`
      - 기존 코드에서 옮기기: `/spec-mirror:adopt [기능]` (전체 목록은 `docs/spec/README.md`)
    - 단계마다 사용자 승인을 받는다. 승인 전에는 다음 단계를 쓰지 않는다.
-   - 기준 하나 = 코드 분기 하나 = 인수 테스트 하나. 테스트 이름은 `R{N}-{M} <요약>`, 분기 주석은 `R{N}-{M}`.
+   - 기준 하나 = 코드 분기 하나 = 테스트 시나리오 하나 이상. 분기 주석은 `R{N}-{M}`.
+   - 테스트는 BDD 시나리오(given / when / then)로, 이름은 `R{N}-{M} <상황>이면 <결과>다`. 도메인 용어로 정책을 쓰고 응답 코드 · 상태 값 같은 현상은 쓰지 않는다.
+   - 도메인은 유닛, Application Service는 통합, Controller · API는 E2E 테스트. 유닛 · 통합은 예외로, 응답 코드는 E2E에서 확인한다.
    - 버그는 탐색 테스트가 고치기 전에 실패하는 것을 확인한 뒤에 고치고, 고친 동작을 기능 명세에 반영한다.
    - 문서와 코드가 다르면 문서가 맞다. "명세 동기화해줘" 는 `/spec-mirror:sync <이름>` 이다.
    ```

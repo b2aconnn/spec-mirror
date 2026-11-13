@@ -6,7 +6,7 @@
 
 ### PBT Applicability Assessment
 
-주문 금액 계산, 주문 내용 동일성 판단, 상태 전이 규칙은 입력 조합이 많고 "언제나 성립해야 하는" 규칙이 분명하므로 Property 기반 검증이 적합합니다. 다만 이 프로젝트는 인수 테스트를 기본으로 하므로, Property는 JUnit 5 `@ParameterizedTest`와 무작위 입력 반복으로 검증하고 Property 라이브러리(jqwik 등)는 선택 사항으로 둡니다.
+주문 금액 계산, 주문 내용 동일성 판단, 상태 전이 규칙은 입력 조합이 많고 "언제나 성립해야 하는" 규칙이 분명하므로 Property 기반 검증이 적합합니다. 다만 이 프로젝트는 시나리오 테스트(유닛 · 통합 · E2E)를 기본으로 하므로, Property는 JUnit 5 `@ParameterizedTest`와 무작위 입력 반복으로 검증하고 Property 라이브러리(jqwik 등)는 선택 사항으로 둡니다.
 
 ### Acceptance Criteria Testing Prework
 
@@ -128,7 +128,7 @@
 9.1 주문 상태와 결제 상태는 항상 짝을 이룬다
   Thoughts: 모든 시나리오가 끝난 시점에 성립해야 합니다.
   Classification: PROPERTY
-  Test Strategy: 모든 인수 테스트 종료 시 짝 표 검증
+  Test Strategy: 모든 통합 테스트 종료 시 짝 표 검증
 
 **Property Reflection:**
 

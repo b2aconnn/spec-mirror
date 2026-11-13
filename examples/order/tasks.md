@@ -4,7 +4,7 @@
 
 기존 결제 승인 시스템(Spring Boot + Kotlin, 토스페이먼츠)에 주문 기능을 추가합니다. 회원이 상품과 수량을 골라 주문하면 시스템이 주문 금액을 계산하고, 주문과 함께 만들어진 결제로 승인하며, 결제 결과를 주문 상태에 반영합니다. 결제 전 주문 취소와 결제 기한 만료도 포함합니다.
 
-구현은 공통 기반과 도메인 모델부터 시작하여 주문 접수, 결제 연동, 조회, 취소, 만료 순으로 진행하며, 각 단계마다 인수 테스트를 먼저 작성하고(Red) 구현합니다(Green).
+구현은 공통 기반과 도메인 모델부터 시작하여 주문 접수, 결제 연동, 조회, 취소, 만료 순으로 진행하며, 각 단계마다 테스트를 먼저 작성하고(Red) 구현합니다(Green). 테스트는 design 05의 `기준 ↔ 테스트 계층`대로 도메인은 유닛, Service는 통합, Controller는 E2E로 쓰고, 모두 BDD 시나리오입니다.
 
 ## Tasks
 
@@ -36,9 +36,10 @@
     - 장애 상태 스위치, 호출 횟수 카운터
     - _Requirements: 1.5, 1.6, 2.4, 3.5_
 
-  - [ ] 2.3 테스트 헬퍼 작성
-    - 기본 주문 접수, 결제 승인 요청 헬퍼
-    - 주문·결제 상태 짝 검증 헬퍼
+  - [ ] 2.3 테스트 지원 코드 작성
+    - design 05 "테스트 지원 코드"의 도우미를 도메인 용어 이름으로 작성 (`기본_주문이_접수되어_있다`, `회원(n).결제한다`, `결제사.주문과_같은_내용으로_승인한다`, `거절된다`, `안내받는다` …)
+    - `주문_거절_사유` · `결제_거절_사유` · `주문_안내` · `결제_안내`: 에러 코드 · 메시지(E2E는 응답 코드 포함)와 1:1
+    - 주문·결제 상태 짝 확인 도우미
     - _Requirements: 9.1_
 
 - [ ] 3. 도메인 모델 및 Repository 구현
@@ -76,10 +77,11 @@
     - 정상 응답, 일부 상품 없음, 5XX, 타임아웃
 
 - [ ] 6. 주문 접수 구현
-  - [ ] 6.1 인수 테스트 작성: OrderPlaceAcceptanceTest
-    - 정상 접수, 상품 개수·수량·중복 상품, 카탈로그 장애, 없는 상품, 판매 중지 상품, 금액 한도
-    - 주문번호 형식, 주문명, 주문·항목·결제 함께 생성, 응답 내용
-    - 요청 금액 무시, PG 호출 없음, 가격 변경 후 금액 불변
+  - [ ] 6.1 테스트 작성: OrderLinesTest, OrderDraftTest, OrderPlaceIntegrationTest, OrderE2ETest
+    - 유닛: 없는 상품, 판매 중지 상품, 금액 계산, 금액 한도(10,000,000원 / 10,000,001원), 주문번호 형식, 주문명
+    - 통합: 상품 카탈로그 장애, 주문·항목·결제 함께 생성, 결제사 요청 없음, 가격 변경 후 금액 불변
+    - E2E: 정상 접수와 응답 내용, 상품 개수(0 · 1 · 20 · 21개) · 수량(0 · 1 · 99 · 100개) · 중복 상품, 요청 금액 무시
+    - E2E: 에러 응답 `INVALID_ORDER_ITEM_COUNT` · `INVALID_ORDER_QUANTITY` · `DUPLICATED_ORDER_ITEM` · `PRODUCT_CATALOG_UNAVAILABLE` · `PRODUCT_NOT_FOUND` · `PRODUCT_NOT_ON_SALE` · `ORDER_AMOUNT_LIMIT_EXCEEDED`
     - _Requirements: 1.1 ~ 1.17_
 
   - [ ] 6.2 요청 검증 구현 (PlaceOrderRequest, OrderController, OrderRequestValidationHandler)
@@ -117,11 +119,10 @@
     - **Validates: Requirements 1.17, 3.5**
 
 - [ ] 7. 중복 주문 방지 구현
-  - [ ] 7.1 인수 테스트 작성: OrderIdempotencyAcceptanceTest
-    - 키 없음 / 형식 오류
-    - 같은 내용 재요청 → 200 기존 주문 (카탈로그 호출 없음)
-    - 다른 내용 → 422, 24시간 경과 후 재사용
-    - 다른 회원 같은 키, 동시 요청
+  - [ ] 7.1 테스트 작성: OrderFingerprintTest, OrderIdempotencyIntegrationTest, OrderE2ETest
+    - 유닛: 주문 내용이 같은지는 상품 · 수량 구성으로만 판단 (항목 순서 무관)
+    - 통합: 같은 내용 재요청 → 처음 주문 (카탈로그 조회 없음), 다른 내용 → 거절, 24시간 경과 후 재사용(23시간 59분 59초 / 24시간 정각), 다른 회원 같은 키, 동시 요청
+    - E2E: 키 없음 / 형식 오류, 에러 응답 `INVALID_IDEMPOTENCY_KEY` · `IDEMPOTENCY_KEY_REUSED`
     - _Requirements: 2.1 ~ 2.8_
 
   - [ ] 7.2 OrderFingerprint, OrderIdempotencyService 구현
@@ -147,12 +148,12 @@
     - **Validates: Requirements 2.8**
 
 - [ ] 8. Checkpoint - 주문 접수 확인
-  - 주문 접수·중복 방지 인수 테스트 통과 확인
+  - 주문 접수·중복 방지 테스트(유닛 · 통합 · E2E) 통과 확인
   - 모든 테스트 통과 확인
 
 - [ ] 9. 결제 결과의 주문 반영 구현
-  - [ ] 9.1 인수 테스트 작성: OrderPaymentResultAcceptanceTest
-    - 승인 완료 → 주문 결제 완료
+  - [ ] 9.1 테스트 작성: OrderPaymentResultIntegrationTest
+    - 통합: 승인 완료 → 주문 결제 완료
     - 결제 실패 확정 → 주문 결제 실패
     - 미도달 / 결과 불명 → 주문 결제 대기 그대로
     - 정합성 경보 2종
@@ -170,16 +171,16 @@
 
 - [ ] 10. 주문 결제 승인 변경
   - [ ] 10.1 기존 결제 테스트 이관
-    - `AC-CNF-*`, `AC-APV-*` → `OrderPaymentConfirmAcceptanceTest`의 `R6-N` 테스트로 이름 변경
+    - `AC-CNF-*`, `AC-APV-*` → 6.3 ~ 6.25는 `PaymentConfirmIntegrationTest`, 6.1 · 6.2는 `OrderPaymentE2ETest`로 옮김
+    - 이름을 `R6-N <상황>이면 <결과>다`로 바꾸고 본문을 given / when / then으로 나눔
     - 셋업을 결제 준비 대신 주문 접수로 변경
     - `AC-PRE-*` 삭제
     - 메시지까지 검증하도록 보강
     - _Requirements: 6.1 ~ 6.25_
 
-  - [ ] 10.2 신규 인수 테스트 작성
-    - 취소·만료된 주문 결제 → 409 `ORDER_NOT_PAYABLE`
-    - 승인 완료·실패 후 주문 상태 확인
-    - 결제 준비 API → 404
+  - [ ] 10.2 신규 테스트 작성: PaymentConfirmIntegrationTest, OrderPaymentE2ETest
+    - 통합: 취소·만료된 주문은 결제할 수 없음, 승인 완료·실패 후 주문 상태, 결제 기한(1초 전 / 정각 / 1초 후)
+    - E2E: 결제 준비 기능 없음, 에러 응답 `ORDER_NOT_PAYABLE` 외 결제 에러 코드마다 대표 시나리오 (design 05 "에러 ↔ E2E 시나리오")
     - _Requirements: 6.9, 6.10, 6.17, 6.18, 6.19, 6.26_
 
   - [ ] 10.3 PaymentStateService, PaymentController 변경
@@ -197,20 +198,19 @@
     - **Validates: Requirements 6.24, 7.4**
 
 - [ ] 11. Checkpoint - 결제 연동 확인
-  - 결제 승인·결과 반영 인수 테스트 통과 확인
+  - 결제 승인·결과 반영 테스트 통과 확인
   - 대사 테스트(`PaymentReconcilerTest`) 셋업 변경 및 통과 확인
   - 모든 테스트 통과 확인
 
 - [ ] 12. 주문 조회 및 주문 내역 구현
-  - [ ] 12.1 인수 테스트 작성: OrderQueryAcceptanceTest
-    - 본인 주문 조회, 다른 회원 주문 → 404
-    - 주문·결제 정보 함께 응답, 결제 진행 중 표시
-    - 조회 중 카탈로그 호출 없음
+  - [ ] 12.1 테스트 작성: OrderQueryIntegrationTest, OrderE2ETest (주문 조회)
+    - 통합: 다른 회원 주문은 볼 수 없음, 주문·결제 정보 함께, 결제 확인 중이면 결제 대기로 보임, 주문 시점 상품명·단가 (조회 중 카탈로그 조회 없음)
+    - E2E: 본인 주문 조회, 에러 응답 `ORDER_NOT_FOUND`
     - _Requirements: 3.1 ~ 3.5_
 
-  - [ ] 12.2 인수 테스트 작성: OrderHistoryAcceptanceTest
-    - 페이지 번호·크기 검증, 기본 20건 / 최대 50건
-    - 최근순, 다음 페이지 여부, 본인 주문만
+  - [ ] 12.2 테스트 작성: OrderQueryIntegrationTest, OrderE2ETest (주문 내역)
+    - 통합: 기본 20건 / 최대 50건, 최근순, 다음 페이지 여부, 본인 주문만
+    - E2E: 주문 내역 보기, 페이지 번호(-1 · 0) · 크기(0 · 1), 에러 응답 `INVALID_PAGE_REQUEST`
     - _Requirements: 4.1 ~ 4.5_
 
   - [ ] 12.3 OrderQueryService, OrderController 구현
@@ -221,11 +221,9 @@
     - **Validates: Requirements 3.2, 4.5, 5.2**
 
 - [ ] 13. 결제 전 주문 취소 구현
-  - [ ] 13.1 인수 테스트 작성: OrderCancelAcceptanceTest
-    - 정상 취소 → 주문 취소 + 결제 실패(`ORDER_CANCELED`)
-    - 다른 회원 주문, 이미 취소된 주문, 취소할 수 없는 상태
-    - 결제 진행 중 취소 불가, 취소와 승인 동시
-    - PG 호출 없음
+  - [ ] 13.1 테스트 작성: OrderCancelIntegrationTest, OrderE2ETest (주문 취소)
+    - 통합: 다른 회원 주문, 이미 취소된 주문, 취소할 수 없는 상태, 결제 진행 중 취소 불가, 취소하면 결제도 실패, 취소와 승인 동시, 결제사 요청 없음
+    - E2E: 정상 취소와 응답 내용, 에러 응답 `ORDER_NOT_CANCELABLE`
     - _Requirements: 5.1 ~ 5.9_
 
   - [ ] 13.2 OrderCancelService, OrderController 구현
@@ -237,8 +235,8 @@
     - **Validates: Requirements 1.16, 5.9**
 
 - [ ] 14. 결제 기한 만료 구현
-  - [ ] 14.1 인수 테스트 작성: OrderExpirationAcceptanceTest
-    - 기한 정각 포함, 오래된 순 최대 100건
+  - [ ] 14.1 테스트 작성: OrderExpirationIntegrationTest
+    - 통합: 기한 1초 전 / 정각, 오래된 순 최대 100건
     - 주문 기한 만료 + 결제 실패(`ORDER_EXPIRED`)
     - 만료 직전 승인 시작 → 건너뜀, 결제 진행 중 → 만료 안 함
     - 한 건 실패해도 나머지 처리, 동시 실행 시 한 번만 만료
@@ -257,8 +255,8 @@
     - **Validates: Requirements 8.7**
 
 - [ ] 15. 주문·결제 상태 일관성 검증
-  - [ ] 15.1 인수 테스트 작성: OrderPaymentConsistencyAcceptanceTest
-    - 모든 인수 테스트 종료 시 주문·결제 상태 짝 확인
+  - [ ] 15.1 테스트 작성: OrderPaymentConsistencyIntegrationTest
+    - 통합: 모든 통합 테스트 종료 시 주문·결제 상태 짝 확인
     - 주문 변경 실패 시 결제 변경도 롤백
     - 승인·취소·만료 동시 실행 → 하나만 반영
     - 외부 호출 중 DB 커넥션 점유 없음
@@ -279,6 +277,7 @@
 
 - [ ] 16. 최종 Checkpoint - 명세 동기화
   - 모든 기준에 대응하는 테스트(`R{N}-{M}`)와 코드 주석(`// R{N}-{M}`) 확인
+  - 에러 코드마다 응답 코드를 확인하는 E2E 시나리오가 있는지 확인
   - 에러 메시지가 requirements.md와 글자까지 같은지 확인
   - 코드 주석 순서가 요구사항 번호 순서와 같은지 확인
   - README.md 갱신 (흐름, DDL, 결제 준비 API 제거)
@@ -286,10 +285,11 @@
 
 ## Notes
 
-- **인수 테스트 우선**: 각 기능은 인수 테스트를 먼저 작성해 실패를 확인한 뒤 구현합니다
-- **Property 테스트**: `*` 표시된 태스크는 선택적입니다. 인수 테스트가 대표 사례를 이미 검증하며, Property 테스트는 무작위 입력으로 범위를 넓힙니다
-- **테스트 이름**: `` `R{N}-{M} <기준 요약>` `` 형식, 경계값은 `R1-2a`, `R1-2b`로 나눕니다
-- **테스트 환경**: H2(MySQL 모드) + `FakePgClient` + `FakeProductCatalog` + 고정 `Clock`
+- **테스트 우선**: 각 기능은 테스트를 먼저 작성해 실패를 확인한 뒤 구현합니다
+- **테스트 계층**: 도메인(`OrderLines`, `OrderDraft`, `OrderFingerprint`)은 유닛, Application Service는 통합, Controller는 E2E입니다. 유닛 · 통합은 거절을 예외로, E2E는 응답 코드까지 확인합니다
+- **테스트 형식**: BDD 시나리오(given / when / then)이고 이름은 `` `R{N}-{M} <상황>이면 <결과>다` `` 입니다. 결과가 다르면 `R1-2a`, `R1-2b`로 나누고, 결과가 같은 경계값은 파라미터 테스트의 예시로 묶습니다
+- **Property 테스트**: `*` 표시된 태스크는 선택적입니다. 시나리오 테스트가 대표 사례를 이미 검증하며, Property 테스트는 무작위 입력으로 범위를 넓힙니다
+- **테스트 환경**: 통합 · E2E는 H2(MySQL 모드) + `FakePgClient` + `FakeProductCatalog` + 고정 `Clock`, 유닛은 도메인 객체만
 - **기존 기술 테스트**: `TossPaymentsClientTest`, `PaymentDomainTest`, `PaymentConfigTest`, `PaymentReconcilerTest`는 기존 이름을 유지합니다
 - **범위 밖**: PG 웹훅, ShedLock, 재고·쿠폰·포인트
 

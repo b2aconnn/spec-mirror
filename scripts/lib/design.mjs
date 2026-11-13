@@ -5,6 +5,8 @@ import path from 'node:path'
 import { readText, maskFences, h2List, rel, normalizeTitle, words } from './util.mjs'
 import { expandRefs, refExists } from './refs.mjs'
 
+const LAYER_TABLE = /^#{3,4} (\d+\.\s*)?기준 ↔ 테스트 계층\s*$/
+
 export const DESIGN_FILES = [
   { file: '01-architecture.md', title: '아키텍처', sections: ['Architecture'] },
   { file: '02-components.md', title: '컴포넌트와 인터페이스', sections: ['Components and Interfaces'] },
@@ -194,6 +196,7 @@ export function checkDesign(dir, req, root, report, { draft = false } = {}) {
     ['01-architecture.md', /^### 도메인 경계\s*$/, '"### 도메인 경계"'],
     ['03-data-models.md', /^### Aggregates\s*$/, '"### Aggregates"'],
     ['03-data-models.md', /^### 도메인 용어 ↔ 코드\s*$/, '"### 도메인 용어 ↔ 코드"'],
+    ['05-testing.md', LAYER_TABLE, '"기준 ↔ 테스트 계층"'],
     ['05-testing.md', /^#{3,4} (\d+\.\s*)?테스트 기준 데이터\s*$/, '"테스트 기준 데이터"'],
     ['07-correctness-properties.md', /^### PBT Applicability Assessment\s*$/, '"### PBT Applicability Assessment"'],
     ['07-correctness-properties.md', /^### Acceptance Criteria Testing Prework\s*$/, '"### Acceptance Criteria Testing Prework"'],
@@ -239,6 +242,27 @@ export function checkDesign(dir, req, root, report, { draft = false } = {}) {
       for (const term of req.terms) {
         if (!firstCells.some((c) => c.includes(term))) report.warn('DES016', fd, sec.line, `Glossary 용어 "${term}" 이(가) "도메인 용어 ↔ 코드" 표에 없습니다. 코드 이름을 적으세요.`)
       }
+    }
+  }
+
+  // DES017 기준 ↔ 테스트 계층 표가 모든 기준을 덮고, 없는 기준을 참조하지 않는다
+  const testing = design.files[4]
+  if (req && testing.exists) {
+    const start = testing.lines.findIndex((l) => LAYER_TABLE.test(l))
+    if (start >= 0) {
+      const ft = rel(root, testing.path)
+      const covered = new Set()
+      for (let i = start + 1; i < testing.lines.length && !/^#{2,4} /.test(testing.lines[i]); i++) {
+        const line = testing.lines[i]
+        if (!/^\|/.test(line) || /^\|\s*:?-/.test(line)) continue
+        const first = line.split('|')[1] || ''
+        for (const [n, m, raw] of expandRefs(first)) {
+          if (!refExists(req, n, m)) report.error('DES017', ft, i + 1, `기준 ↔ 테스트 계층: 참조 ${n}.${m} 이(가) requirements 에 없습니다. (${raw})`)
+          else covered.add(`${n}.${m}`)
+        }
+      }
+      const missing = req.requirements.flatMap((r) => r.criteria.map((c) => `${r.number}.${c.number}`)).filter((id) => !covered.has(id))
+      if (missing.length) report.warn('DES017', ft, start + 1, `기준 ↔ 테스트 계층 표에 없는 기준: ${missing.join(', ')}. 어느 계층의 테스트가 맡는지 적으세요.`)
     }
   }
 
