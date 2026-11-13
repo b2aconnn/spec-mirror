@@ -2,7 +2,7 @@
 name: adopt
 description: spec-mirror 기존 코드에서 명세 만들기. 이미 동작하는 코드를 동작을 바꾸지 않고 기능 명세(requirements → design → tasks)로 옮깁니다. 기능을 주면 그 기능을, 주지 않으면 프로젝트 전체의 명세 지도(docs/spec/README.md)부터 만들고 기능 하나씩 진행합니다. 코드의 분기를 빠짐없이 기준으로 옮기고, tasks 는 테스트 이름 정리 · 빠진 테스트 추가 · 분기 주석 같은 도입 작업입니다. "기존 코드 분석해서 명세 만들어줘", "이 프로젝트 문서화해줘", "레거시를 명세로 옮겨줘"에 사용합니다.
 argument-hint: "[기능] [requirements|design|tasks] [코드 경로나 설명]"
-allowed-tools: Bash(node *spec-mirror.mjs* next*), Bash(node *spec-mirror.mjs* gate*), Bash(node *spec-mirror.mjs* status*), Bash(node *spec-mirror.mjs* check*), Bash(node *spec-mirror.mjs* scaffold*), Bash(node *spec-mirror.mjs* init*), Bash(node *spec-mirror.mjs* list*), Bash(node *spec-mirror.mjs* map*)
+allowed-tools: Bash(node *spec-mirror.mjs* next*), Bash(node *spec-mirror.mjs* gate*), Bash(node *spec-mirror.mjs* status*), Bash(node *spec-mirror.mjs* check*), Bash(node *spec-mirror.mjs* scaffold*), Bash(node *spec-mirror.mjs* init*), Bash(node *spec-mirror.mjs* list*), Bash(node *spec-mirror.mjs* map*), Bash(node *spec-mirror.mjs* trace*)
 ---
 
 # spec-mirror: adopt (기존 코드에서 명세 만들기)
@@ -38,11 +38,11 @@ allowed-tools: Bash(node *spec-mirror.mjs* next*), Bash(node *spec-mirror.mjs* g
    | `type: bugfix` | 버그 명세 폴더입니다. 다른 이름을 정하게 합니다 |
    | `action: write` | `stage` 단계를 쓰거나 고칩니다 |
    | `action: approve` | 아래 5번 |
-   | `action: implement` | 도입 작업(tasks)을 `/spec-mirror:implement <기능>`으로 진행하도록 안내합니다 |
+   | `action: implement` | 도입 작업(tasks)을 아래 8번으로 진행합니다 |
    | `action: sync` | `/spec-mirror:sync <기능>`을 안내합니다. 끝나면 명세 지도의 다음 기능을 안내합니다 |
 
 5. **승인 대기 상태일 때**
-   - 이번 메시지에서 사용자가 **분명하게 승인했으면** `SM approve <기능> <단계>`를 실행합니다. 이 명령은 권한 확인을 거칩니다. 성공하면 4번으로 돌아가 다음 단계를 진행합니다.
+   - 이번 메시지에서 사용자가 **분명하게 승인했으면** `SM approve <기능> <단계>`를 실행합니다. 이 명령은 권한 확인을 거칩니다. 성공하면 4번으로 돌아가 다음 단계를 진행합니다. 승인한 단계가 tasks면 8번으로 바로 도입 작업을 합니다.
    - 승인하지 않았으면 문서를 요약해 보여 주고 승인을 요청합니다. 애매한 반응은 승인이 아닙니다.
 
 6. **단계를 씁니다.** 해당 단계 안내 파일을 **처음부터 끝까지 읽고** 그대로 따릅니다.
@@ -54,7 +54,15 @@ allowed-tools: Bash(node *spec-mirror.mjs* next*), Bash(node *spec-mirror.mjs* g
 
    > 이대로 승인하면 "승인"이라고 답해 주세요. 고칠 점이 있으면 알려 주세요.
 
+   tasks 단계면 마지막 줄을 다음으로 씁니다.
+
+   > 이대로 승인하면 "승인"이라고 답해 주세요. 승인하면 모든 도입 작업을 바로 진행합니다. 일부만 하려면 "승인, 1~3번만"처럼 번호를 함께 알려 주세요.
+
    **스스로 승인하지 않습니다. 사용자 답 없이 다음 단계나 다음 기능으로 넘어가지 않습니다.**
+
+8. **도입 작업을 합니다.** `<BASE>/../implement/SKILL.md`를 **처음부터 끝까지 읽고** 그 절차의 adopt 명세 부분을 따릅니다. 그 문서의 `<BASE>`는 `<BASE>/../implement`입니다.
+   - 범위는 사용자 말에서 읽습니다. 번호가 없으면 남은 필수 태스크 전부, 번호가 있으면 그 태스크만 합니다.
+   - "승인, 진행은 나중에"처럼 미루면 승인만 하고 멈춥니다.
 
 ## 지키는 것
 

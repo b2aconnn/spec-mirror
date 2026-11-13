@@ -42,10 +42,11 @@ Claude Code와 Node.js 18 이상이 필요합니다.
 1. Claude가 **요구사항**(`requirements.md`)을 쓰고 멈춥니다.
 2. 읽어 보고 고칠 점을 말하거나, 괜찮으면 **"승인"** 이라고 답합니다.
 3. 승인하면 **설계**(`design.md`), 다시 승인하면 **태스크**(`tasks.md`)로 넘어갑니다.
-4. 태스크까지 승인하면 구현합니다.
+4. 태스크까지 승인하면 **바로 모든 태스크를 구현**합니다 (테스트 먼저, 그다음 코드).
+   - 일부만 하려면 번호를 함께 말합니다: "승인, 1~3번만"
+   - 나중에 이어서: "4번 진행해", "4~6번 구현해줘", "1,3번 태스크 시작해줘"
 
 ```text
-/spec-mirror:implement order        다음 태스크 구현 (테스트 먼저, 그다음 코드)
 /spec-mirror:sync order             명세 · 테스트 · 코드가 맞는지 마지막 확인
 ```
 
@@ -209,6 +210,7 @@ Claude Code와 Node.js 18 이상이 필요합니다.
 - **형식을 자동으로 검사합니다.** 명세 문서를 저장할 때마다 검사하고, 틀린 곳은 Claude가 그 자리에서 고칩니다.
 - **리뷰어가 따로 봅니다.** 단계마다 별도의 리뷰 에이전트가 문서를 다시 읽고 빠진 것을 찾습니다. 승인을 요청할 때 무엇을 지적받았고 어떻게 처리했는지 함께 보여 줍니다.
 - **규모에 맞게 설계합니다.** design은 DDD를 따르되, 기능의 설계 규모(작음 · 보통 · 큼)에 맞는 도구만 씁니다. 작은 기능을 과하게 나누면 검사기가 경고하고 리뷰어가 지적합니다.
+- **코드 이름은 도메인 용어를 따릅니다.** 요구사항 용어의 영문 이름이 클래스 · 변수 이름이 되고, 상태를 바꾸는 메서드는 `cancel()`, `expire()`처럼 행위 이름으로 짓습니다. design의 "도메인 용어 ↔ 코드" 표에 빠진 용어가 있거나 용어의 상태 값이 코드에 없으면 검사기가 알려 줍니다.
 - **명세와 코드를 번호로 잇습니다.** 요구사항의 기준 하나가 테스트 하나(`R1-2 …`)와 코드 분기 하나(`// R1-2`)로 이어집니다. `/spec-mirror:sync`가 빠진 것을 찾아 줍니다.
 - **승인 뒤에 문서를 고치면** 다시 승인받아야 다음 단계로 갈 수 있습니다.
 
@@ -220,7 +222,7 @@ Claude Code와 Node.js 18 이상이 필요합니다.
 | `/spec-mirror:spec <이름> [설명]` | 새 기능 명세 (이어서 부르면 다음 단계) |
 | `/spec-mirror:bugfix <이름> [설명]` | 버그 명세 (이어서 부르면 다음 단계) |
 | `/spec-mirror:adopt [기능]` | 기존 코드를 명세로 |
-| `/spec-mirror:implement <이름> [next\|all\|번호]` | 태스크 구현 |
+| `/spec-mirror:implement <이름> [all\|next\|번호\|1~3]` | 태스크 구현 (tasks 승인 시 자동으로 시작) |
 | `/spec-mirror:sync <이름>` | 명세 · 테스트 · 코드 대조 후 수정 |
 | `/spec-mirror:status` | 명세별 진행 상황과 다음 할 일 |
 | `/spec-mirror:check` | 형식 검사만 |
@@ -248,6 +250,7 @@ docs/spec/
 |---|---|
 | 요구사항 쓰는 법 | [rules/feature/requirements-format.md](rules/feature/requirements-format.md) |
 | 설계 · 태스크 쓰는 법 | [rules/feature/](rules/feature/) |
+| 설계 규모 · DDD · 이름 짓기 | [rules/feature/design-format.md](rules/feature/design-format.md) |
 | 버그 명세 쓰는 법 | [rules/bugfix/](rules/bugfix/) |
 | 기존 코드 옮기기 · 명세 지도 | [rules/adopt.md](rules/adopt.md), [rules/spec-map.md](rules/spec-map.md) |
 | 테스트 이름 · 코드 주석 규칙 | [rules/traceability.md](rules/traceability.md) |

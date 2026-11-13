@@ -42,10 +42,11 @@ It creates `.spec-mirror/config.json` and the spec folder `docs/spec/`.
 1. Claude writes the **requirements** (`requirements.md`) and stops.
 2. Review them. Ask for changes, or reply **"승인"** (approve).
 3. After approval it writes the **design** (`design.md`). After the next approval it writes the **tasks** (`tasks.md`).
-4. Once the tasks are approved, implement:
+4. Once the tasks are approved, **all tasks are implemented right away** (test first, then code).
+   - To run only some, add the numbers: "승인, 1~3번만" (approve, only 1–3)
+   - To continue later: "4번 진행해" (run 4), "4~6번 구현해줘" (implement 4–6)
 
 ```text
-/spec-mirror:implement order        next task (test first, then code)
 /spec-mirror:sync order             final check of spec, tests and code
 ```
 
@@ -80,6 +81,8 @@ Claude writes the spec from the code **without changing behavior**. For a whole 
 - **The format is checked automatically** on every save, and Claude fixes errors right away.
 - **A separate reviewer agent** reads each stage independently. Its findings, and what was done with them, are shown when Claude asks for approval.
 - **Design fits the feature's size.** Design follows DDD, but only as far as the feature needs. Stage 01 sets a design scale (small · medium · large) from the requirements, and that scale decides which tools are used (Aggregates, ports, events) and how many components there are. The checker warns and the reviewer flags over-split designs.
+- **Each step in a requirement's flow is color-coded**: 🟢 business flow (request · action · response), 🟠 validation, 🟣 external request. The legend sits right under the requirements heading, so you can read the business flow first by following 🟢, then the validations by following 🟠. The classification follows Cockburn's use-case step kinds.
+- **Code names follow the domain terms.** Glossary English names become class and variable names, and state changes are behavior methods such as `cancel()` and `expire()`. The checker reports glossary terms missing from design's term ↔ code table and glossary state values missing from the code.
 - **Requirements are written in natural Korean by default** (`# 요구사항`, `## 개요`, `**사용자 이야기:**` …). The English frame (`# Requirements Document`, `## Introduction`, `**User Story:** As a …`) is still accepted, so existing documents keep passing the checks.
 - **Spec and code are linked by number.** One criterion maps to one test (`R1-2 …`) and one code branch (`// R1-2`). `/spec-mirror:sync` finds the gaps.
 
@@ -91,7 +94,7 @@ Claude writes the spec from the code **without changing behavior**. For a whole 
 | `/spec-mirror:spec <name> [description]` | Feature spec (call again for the next stage) |
 | `/spec-mirror:bugfix <name> [description]` | Bugfix spec (call again for the next stage) |
 | `/spec-mirror:adopt [feature]` | Turn existing code into a spec |
-| `/spec-mirror:implement <name> [next\|all\|id]` | Implement tasks |
+| `/spec-mirror:implement <name> [all\|next\|id\|1~3]` | Implement tasks (starts automatically when tasks are approved) |
 | `/spec-mirror:sync <name>` | Compare spec, tests and code, then fix |
 | `/spec-mirror:status` | Progress and next step per spec |
 | `/spec-mirror:check` | Format check only |

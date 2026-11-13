@@ -23,5 +23,5 @@ allowed-tools: Bash(node *spec-mirror.mjs* approve*), Bash(node *spec-mirror.mjs
    - 단계가 없으면 `SM next <이름> --json`의 `action`이 `approve`일 때 그 `stage`를 승인합니다. 아니면 상태를 보여 주고 묻습니다.
 2. `SM approve <이름> <단계>`를 실행합니다.
 3. 결과를 보고합니다.
-   - 성공하면 다음 할 일을 안내합니다. 기능 명세는 `/spec-mirror:spec <이름>`, 버그 명세는 `/spec-mirror:bugfix <이름>`으로 다음 단계를 진행하고, tasks까지 승인되었으면 `/spec-mirror:implement <이름>`입니다.
+   - 성공하면 다음 할 일을 안내합니다. 기능 명세는 `/spec-mirror:spec <이름>`, 버그 명세는 `/spec-mirror:bugfix <이름>`으로 다음 단계를 진행하고, tasks까지 승인되었으면 "구현해줘"(모든 태스크) 또는 "1~3번 진행해"(일부)로 구현을 시작할 수 있다고 알립니다.
    - 실패하면 이유를 그대로 전하고 해결 방법을 안내합니다. 이유는 형식 오류, 앞 단계 미승인, 문서 없음 중 하나입니다.

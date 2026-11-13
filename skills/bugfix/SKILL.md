@@ -2,7 +2,7 @@
 name: bugfix
 description: spec-mirror 버그 명세. 버그를 bugfix(현재 동작 / 기대 동작 / 유지할 동작) → design(원인 · 고치는 범위 · Property) → tasks(탐색 테스트 실패 확인 → 보존 테스트 → 수정 → 명세 반영) 세 단계로, 단계마다 사용자 승인을 받으며 진행합니다. 처음 부르면 bugfix.md 를 쓰고, 다시 부르면 지금 단계에 맞춰 이어서 합니다. 버그 리포트, 장애, "이거 왜 이렇게 동작해", "버그 고쳐줘", 회귀가 걱정되는 수정에 사용합니다.
 argument-hint: <버그 이름> [bugfix|design|tasks] [버그 설명]
-allowed-tools: Bash(node *spec-mirror.mjs* next*), Bash(node *spec-mirror.mjs* gate*), Bash(node *spec-mirror.mjs* status*), Bash(node *spec-mirror.mjs* check*), Bash(node *spec-mirror.mjs* scaffold*), Bash(node *spec-mirror.mjs* init*), Bash(node *spec-mirror.mjs* list*)
+allowed-tools: Bash(node *spec-mirror.mjs* trace*), Bash(node *spec-mirror.mjs* next*), Bash(node *spec-mirror.mjs* gate*), Bash(node *spec-mirror.mjs* status*), Bash(node *spec-mirror.mjs* check*), Bash(node *spec-mirror.mjs* scaffold*), Bash(node *spec-mirror.mjs* init*), Bash(node *spec-mirror.mjs* list*)
 ---
 
 # spec-mirror: bugfix (버그 명세)
@@ -36,14 +36,14 @@ allowed-tools: Bash(node *spec-mirror.mjs* next*), Bash(node *spec-mirror.mjs* g
    | `start` | 새 버그 명세입니다. bugfix 단계로 갑니다 |
    | `write` | `stage` 단계를 쓰거나 고칩니다 |
    | `approve` | `stage` 단계가 사용자 승인을 기다립니다. 아래 4번 |
-   | `implement` | 세 단계가 모두 승인되었습니다. `/spec-mirror:implement <이름>`을 안내합니다 |
+   | `implement` | 세 단계가 모두 승인되었습니다. 아래 7번으로 구현합니다 |
    | `sync` | 필수 태스크를 모두 마쳤습니다. `/spec-mirror:sync <이름>`을 안내합니다 |
 
    - 결과의 `type`이 `feature`면 기능 명세 폴더입니다. 다른 이름을 정하거나 `/spec-mirror:spec`을 안내합니다.
    - 사용자가 단계를 지정했으면 그 단계로 갑니다. 단, `SM gate <이름> <단계>`가 실패하면 앞 단계 승인부터 안내합니다.
 
 4. **승인 대기 상태일 때**
-   - 이번 메시지에서 사용자가 **분명하게 승인했으면** `SM approve <이름> <단계>`를 실행합니다. 성공하면 3번으로 돌아가 다음 단계를 진행합니다.
+   - 이번 메시지에서 사용자가 **분명하게 승인했으면** `SM approve <이름> <단계>`를 실행합니다. 성공하면 3번으로 돌아가 다음 단계를 진행합니다. 승인한 단계가 tasks면 7번으로 바로 구현합니다.
    - 승인하지 않았으면 그 단계 문서를 요약해 보여 주고 승인을 요청합니다. 고칠 점을 말하면 고칩니다.
    - 애매한 반응은 승인이 아닙니다. "승인할까요?"라고 묻습니다.
 
@@ -56,7 +56,15 @@ allowed-tools: Bash(node *spec-mirror.mjs* next*), Bash(node *spec-mirror.mjs* g
 
    > 이대로 승인하면 "승인"이라고 답해 주세요. 고칠 점이 있으면 알려 주세요.
 
+   tasks 단계면 마지막 줄을 다음으로 씁니다.
+
+   > 이대로 승인하면 "승인"이라고 답해 주세요. 승인하면 모든 태스크를 바로 구현합니다. 일부만 하려면 "승인, 1~3번만"처럼 번호를 함께 알려 주세요.
+
    **스스로 승인하지 않습니다. 사용자 답 없이 다음 단계를 쓰지 않습니다.**
+
+7. **구현합니다.** `<BASE>/../implement/SKILL.md`를 **처음부터 끝까지 읽고** 그 절차를 따릅니다. 그 문서의 `<BASE>`는 `<BASE>/../implement`입니다.
+   - 범위는 사용자 말에서 읽습니다. 번호가 없으면 남은 필수 태스크 전부, "승인, 1~3번만"이나 "2번 진행해"처럼 번호가 있으면 그 태스크만 합니다.
+   - "승인, 구현은 나중에"처럼 미루면 승인만 하고 멈춥니다. 나중에 "구현해줘" 또는 "1~3번 진행해"로 이어서 할 수 있다고 알립니다.
 
 ## 지키는 것
 

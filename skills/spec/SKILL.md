@@ -2,7 +2,7 @@
 name: spec
 description: spec-mirror 기능 명세. 새 기능이나 기능 변경을 requirements → design → tasks 세 단계로, 단계마다 사용자 승인을 받으며 진행합니다. 처음 부르면 requirements 를 쓰고, 다시 부르면 지금 단계에 맞춰 이어서 합니다. 새 기능을 만들거나 기존 기능의 동작을 바꾸거나 "스펙 써줘", "요구사항 정리해줘", "설계 문서 만들어줘", "태스크 뽑아줘" 같은 요청에 사용합니다. 버그는 bugfix 를 씁니다.
 argument-hint: <이름> [requirements|design|tasks] [만들거나 바꿀 것]
-allowed-tools: Bash(node *spec-mirror.mjs* next*), Bash(node *spec-mirror.mjs* gate*), Bash(node *spec-mirror.mjs* status*), Bash(node *spec-mirror.mjs* check*), Bash(node *spec-mirror.mjs* scaffold*), Bash(node *spec-mirror.mjs* init*), Bash(node *spec-mirror.mjs* list*)
+allowed-tools: Bash(node *spec-mirror.mjs* next*), Bash(node *spec-mirror.mjs* gate*), Bash(node *spec-mirror.mjs* status*), Bash(node *spec-mirror.mjs* check*), Bash(node *spec-mirror.mjs* scaffold*), Bash(node *spec-mirror.mjs* init*), Bash(node *spec-mirror.mjs* list*), Bash(node *spec-mirror.mjs* trace*)
 ---
 
 # spec-mirror: spec (기능 명세)
@@ -36,7 +36,7 @@ allowed-tools: Bash(node *spec-mirror.mjs* next*), Bash(node *spec-mirror.mjs* g
    | `start` | 새 명세입니다. requirements 단계로 갑니다 |
    | `write` | `stage` 단계를 쓰거나 고칩니다 |
    | `approve` | `stage` 단계가 사용자 승인을 기다립니다. 아래 4번 |
-   | `implement` | 세 단계가 모두 승인되었습니다. `/spec-mirror:implement <이름>`을 안내합니다 |
+   | `implement` | 세 단계가 모두 승인되었습니다. 아래 7번으로 구현합니다 |
    | `sync` | 필수 태스크를 모두 마쳤습니다. `/spec-mirror:sync <이름>`을 안내합니다 |
 
    - 결과의 `type`이 `bugfix`면 버그 명세입니다. `/spec-mirror:bugfix <이름>`을 안내하고 멈춥니다.
@@ -46,7 +46,7 @@ allowed-tools: Bash(node *spec-mirror.mjs* next*), Bash(node *spec-mirror.mjs* g
    - 이미 승인된 단계를 고쳐 달라는 요청이면 그 단계를 고칩니다. 고친 뒤에는 재승인이 필요하고, 뒤 단계도 다시 확인해야 한다고 알립니다.
 
 4. **승인 대기 상태일 때**
-   - 이번 메시지에서 사용자가 **분명하게 승인했으면**("승인", "좋아, 다음으로", "design 진행해") `SM approve <이름> <단계>`를 실행합니다. 성공하면 3번으로 돌아가 다음 단계를 진행합니다.
+   - 이번 메시지에서 사용자가 **분명하게 승인했으면**("승인", "좋아, 다음으로", "design 진행해") `SM approve <이름> <단계>`를 실행합니다. 성공하면 3번으로 돌아가 다음 단계를 진행합니다. 승인한 단계가 tasks면 7번으로 바로 구현합니다.
    - 승인하지 않았으면 그 단계 문서를 요약해 보여 주고 승인을 요청합니다. 고칠 점을 말하면 고칩니다.
    - 애매한 반응은 승인이 아닙니다. "승인할까요?"라고 묻습니다.
 
@@ -59,7 +59,15 @@ allowed-tools: Bash(node *spec-mirror.mjs* next*), Bash(node *spec-mirror.mjs* g
 
    > 이대로 승인하면 "승인"이라고 답해 주세요. 고칠 점이 있으면 알려 주세요.
 
+   tasks 단계면 마지막 줄을 다음으로 씁니다.
+
+   > 이대로 승인하면 "승인"이라고 답해 주세요. 승인하면 모든 태스크를 바로 구현합니다. 일부만 하려면 "승인, 1~3번만"처럼 번호를 함께 알려 주세요.
+
    **스스로 승인하지 않습니다. 사용자 답 없이 다음 단계를 쓰지 않습니다.**
+
+7. **구현합니다.** `<BASE>/../implement/SKILL.md`를 **처음부터 끝까지 읽고** 그 절차를 따릅니다. 그 문서의 `<BASE>`는 `<BASE>/../implement`입니다.
+   - 범위는 사용자 말에서 읽습니다. 번호가 없으면 남은 필수 태스크 전부, "승인, 1~3번만"이나 "2번 진행해"처럼 번호가 있으면 그 태스크만 합니다.
+   - "승인, 구현은 나중에"처럼 미루면 승인만 하고 멈춥니다. 나중에 "구현해줘" 또는 "1~3번 진행해"로 이어서 할 수 있다고 알립니다.
 
 ## 지키는 것
 
